@@ -1,0 +1,19 @@
+{
+  "name": "sisprestamos/webapp",
+  "description": "Sistema web de gestion de prestamos con PHP, Bootstrap y MySQL.",
+  "type": "project",
+  "require": {
+    "php": ">=7.4",
+    "dompdf/dompdf": "^2.0",
+    "phpmailer/phpmailer": "^6.9",
+    "phpoffice/phpspreadsheet": "^2.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}
