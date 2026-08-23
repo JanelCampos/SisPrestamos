@@ -38,8 +38,6 @@ CREATE TABLE clientes (
     situacion_laboral VARCHAR(50) NOT NULL,
     estado_civil VARCHAR(30) NOT NULL,
     direccion_trabajo VARCHAR(255) NULL,
-    latitud DECIMAL(10,7) NULL,
-    longitud DECIMAL(10,7) NULL,
     estado TINYINT(1) NOT NULL DEFAULT 1,
     creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     eliminado_en DATETIME NULL,
@@ -296,9 +294,9 @@ INSERT INTO productos_prestamo (nombre, frecuencia_pago, tasa_interes_tipo, tasa
 ('Prestamo quincenal rapido', 'quincenal', 'mensual', 10.0000, 0.7000, 12, 1),
 ('Prestamo semanal comercial', 'semanal', 'mensual', 8.5000, 0.5000, 16, 1);
 
-INSERT INTO clientes (codigo, foto, nombres, dni, telefono, email, direccion, nacionalidad, tipo_vivienda, situacion_laboral, estado_civil, direccion_trabajo, latitud, longitud, estado, creado_en) VALUES
-('CLI-20260722001', NULL, 'Juan Carlos Perez Lopez', '12345678', '999111222', 'juan.perez@correo.com', 'Av. Principal 123, Lima', 'Peruana', 'Propia', 'Dependiente', 'Casado', 'Parque Industrial 45', -12.0463740, -77.0427934, 1, NOW()),
-('CLI-20260722002', NULL, 'Maria Elena Ruiz Soto', '87654321', '988777666', 'maria.ruiz@correo.com', 'Jr. Libertad 456, Lima', 'Peruana', 'Alquilada', 'Independiente', 'Soltera', 'Mercado Central Stand 22', -12.0565900, -77.0378400, 1, NOW());
+INSERT INTO clientes (codigo, foto, nombres, dni, telefono, email, direccion, nacionalidad, tipo_vivienda, situacion_laboral, estado_civil, direccion_trabajo, estado, creado_en) VALUES
+('CLI-20260722001', NULL, 'Juan Carlos Perez Lopez', '12345678', '999111222', 'juan.perez@correo.com', 'Av. Principal 123, Lima', 'Peruana', 'Propia', 'Dependiente', 'Casado', 'Parque Industrial 45', 1, NOW()),
+('CLI-20260722002', NULL, 'Maria Elena Ruiz Soto', '87654321', '988777666', 'maria.ruiz@correo.com', 'Jr. Libertad 456, Lima', 'Peruana', 'Alquilada', 'Independiente', 'Soltera', 'Mercado Central Stand 22', 1, NOW());
 
 INSERT INTO garantes (cliente_id, foto, nombre_completo, dni, telefono, direccion) VALUES
 (1, NULL, 'Ana Flores Castro', '45678912', '987123456', 'Mz. B Lt. 2, San Juan'),

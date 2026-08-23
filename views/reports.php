@@ -33,7 +33,7 @@
                     <h2 class="h5 mb-0">Reporte de cartera</h2>
                     <div class="btn-group btn-group-sm">
                         <a href="<?= e(app_url('reportes/cartera/excel?' . http_build_query($_GET))) ?>" class="btn btn-outline-success">Excel</a>
-                        <a href="<?= e(app_url('reportes/cartera/pdf?' . http_build_query($_GET))) ?>" class="btn btn-outline-danger">PDF</a>
+                        <a href="<?= e(app_url('reportes/cartera/pdf?' . http_build_query($_GET))) ?>" class="btn btn-outline-danger" target="_blank">PDF</a>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -74,7 +74,7 @@
                     <h2 class="h5 mb-0">Reporte de cobros</h2>
                     <div class="btn-group btn-group-sm">
                         <a href="<?= e(app_url('reportes/cobros/excel?' . http_build_query($_GET))) ?>" class="btn btn-outline-success">Excel</a>
-                        <a href="<?= e(app_url('reportes/cobros/pdf?' . http_build_query($_GET))) ?>" class="btn btn-outline-danger">PDF</a>
+                        <a href="<?= e(app_url('reportes/cobros/pdf?' . http_build_query($_GET))) ?>" class="btn btn-outline-danger" target="_blank">PDF</a>
                     </div>
                 </div>
                 <div class="table-responsive" style="max-height: 360px;">

@@ -87,19 +87,30 @@ class ClientRepository
     public function all(array $filters = []): array
     {
         $sql = 'SELECT c.*, g.nombre_completo AS garante_nombre,
-                       (
-                           SELECT COALESCE(SUM(p.saldo_pendiente), 0)
-                           FROM prestamos p
-                           WHERE p.cliente_id = c.id AND p.estado IN ("vigente", "vencido", "moroso")
-                       ) AS deuda_activa
+                    (
+                        SELECT COALESCE(SUM(p.saldo_pendiente), 0)
+                        FROM prestamos p
+                        WHERE p.cliente_id = c.id 
+                            AND p.estado IN ("vigente", "vencido", "moroso")
+                    ) AS deuda_activa
                 FROM clientes c
                 LEFT JOIN garantes g ON g.cliente_id = c.id
                 WHERE c.eliminado_en IS NULL';
+
         $params = [];
 
         if (!empty($filters['q'])) {
-            $sql .= ' AND (c.nombres LIKE :search OR c.dni LIKE :search OR c.telefono LIKE :search)';
-            $params['search'] = '%' . $filters['q'] . '%';
+            $sql .= ' AND (
+                c.nombres LIKE :search_nombres
+                OR c.dni LIKE :search_dni
+                OR c.telefono LIKE :search_telefono
+            )';
+
+            $search = '%' . $filters['q'] . '%';
+
+            $params['search_nombres'] = $search;
+            $params['search_dni'] = $search;
+            $params['search_telefono'] = $search;
         }
 
         $sql .= ' ORDER BY c.id DESC';
@@ -144,13 +155,15 @@ class ClientRepository
     {
         $connection = Database::connection();
         $connection->beginTransaction();
+        var_dump($data);
+        var_dump($id);
 
         try {
             if ($id === null) {
                 $statement = $connection->prepare(
                     'INSERT INTO clientes
-                    (codigo, foto, nombres, dni, telefono, email, direccion, nacionalidad, tipo_vivienda, situacion_laboral, estado_civil, direccion_trabajo, latitud, longitud, creado_en)
-                    VALUES (:codigo, :foto, :nombres, :dni, :telefono, :email, :direccion, :nacionalidad, :tipo_vivienda, :situacion_laboral, :estado_civil, :direccion_trabajo, :latitud, :longitud, NOW())'
+                    (codigo, foto, nombres, dni, telefono, email, direccion, nacionalidad, tipo_vivienda, situacion_laboral, estado_civil, direccion_trabajo, creado_en)
+                    VALUES (:codigo, :foto, :nombres, :dni, :telefono, :email, :direccion, :nacionalidad, :tipo_vivienda, :situacion_laboral, :estado_civil, :direccion_trabajo, NOW())'
                 );
                 $statement->execute($this->clientPayload($data));
                 $clientId = (int) $connection->lastInsertId();
@@ -169,9 +182,7 @@ class ClientRepository
                         tipo_vivienda = :tipo_vivienda,
                         situacion_laboral = :situacion_laboral,
                         estado_civil = :estado_civil,
-                        direccion_trabajo = :direccion_trabajo,
-                        latitud = :latitud,
-                        longitud = :longitud
+                        direccion_trabajo = :direccion_trabajo
                      WHERE id = :id'
                 );
                 unset($payload['codigo']);
@@ -194,6 +205,8 @@ class ClientRepository
 
             if ($guarantorId) {
                 $guarantor['id'] = $guarantorId;
+                unset($guarantor['cliente_id']);
+                
                 $statement = $connection->prepare(
                     'UPDATE garantes SET
                         foto = :foto,
@@ -243,8 +256,6 @@ class ClientRepository
             'situacion_laboral' => $data['situacion_laboral'],
             'estado_civil' => $data['estado_civil'],
             'direccion_trabajo' => $data['direccion_trabajo'] ?: null,
-            'latitud' => $data['latitud'] ?: null,
-            'longitud' => $data['longitud'] ?: null,
         ];
     }
 }

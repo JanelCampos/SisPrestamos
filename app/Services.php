@@ -248,22 +248,30 @@ class LoanService
             throw new \InvalidArgumentException('El tipo de tasa no es valido.');
         }
 
-        if (!in_array($payload['frecuencia_pago'], ['diario', 'semanal', 'quincenal', 'mensual'], true)) {
+        if (!in_array($payload['frecuencia_pago'], ['diario', '10 dias', 'semanal', 'quincenal', 'mensual'], true)) {
             throw new \InvalidArgumentException('La frecuencia de pago no es valida.');
         }
     }
 
     private function periodicRate(string $rateType, float $rateValue, string $frequency): float
     {
-        $monthlyRate = $rateType === 'anual' ? ($rateValue / 12) / 100 : $rateValue / 100;
+        $monthlyRate = $rateType === 'anual'
+            ? ($rateValue / 12) / 100
+            : $rateValue / 100;
 
         switch ($frequency) {
             case 'diario':
-                return $monthlyRate / 30;
+                return $monthlyRate * (1 / 30);
+
+            case '10 dias':
+                return $monthlyRate * (10 / 30);
+
             case 'semanal':
-                return $monthlyRate / 4;
+                return $monthlyRate * (7 / 30);
+
             case 'quincenal':
-                return $monthlyRate / 2;
+                return $monthlyRate * (15 / 30);
+
             case 'mensual':
             default:
                 return $monthlyRate;
@@ -279,6 +287,8 @@ class LoanService
         switch ($frequency) {
             case 'diario':
                 return $firstDueDate->add(new DateInterval('P' . $offset . 'D'));
+            case '10 dias':
+                return $firstDueDate->add(new DateInterval('P' . ($offset * 10) . 'D'));
             case 'semanal':
                 return $firstDueDate->add(new DateInterval('P' . ($offset * 7) . 'D'));
             case 'quincenal':
@@ -304,7 +314,7 @@ class ReportService
         $payload = $this->loanService->exportReport($type, $filters);
 
         if ($format === 'excel') {
-            $this->exportCsvAsExcel($payload['rows'], $type);
+            $this->exportExcel($payload['rows'], $type);
 
             return;
         }
@@ -312,23 +322,140 @@ class ReportService
         $this->exportHtmlAsPdf($payload['rows'], $type);
     }
 
-    private function exportCsvAsExcel(array $rows, string $type): void
+    private function exportExcel(array $rows, string $type): void
     {
-        $filename = $type . '-' . date('Ymd_His') . '.csv';
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        $filename = $type . '-' . date('Ymd_His') . '.xls';
 
-        $handle = fopen('php://output', 'w');
-        if ($rows !== []) {
-            fputcsv($handle, array_keys($rows[0]));
-            foreach ($rows as $row) {
-                fputcsv($handle, $row);
+        header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        echo '<!DOCTYPE html>';
+        echo '<html lang="es">';
+        echo '<head>';
+        echo '<meta charset="UTF-8">';
+        echo '<style>';
+
+        echo 'body {
+            font-family: Arial, sans-serif;
+        }';
+
+        echo 'table {
+            border-collapse: collapse;
+            width: 100%;
+        }';
+
+        echo 'th {
+            background-color: #198754;
+            color: white;
+            font-weight: bold;
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+        }';
+
+        echo 'td {
+            border: 1px solid #ccc;
+            padding: 7px;
+        }';
+
+        echo '.titulo {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            padding: 12px;
+        }';
+
+        echo '.fecha {
+            text-align: right;
+            color: #666;
+            padding: 8px;
+        }';
+
+        echo '</style>';
+        echo '</head>';
+
+        echo '<body>';
+
+        $titulo = $type === 'cobros'
+            ? 'REPORTE DE COBROS'
+            : 'REPORTE DE CARTERA';
+
+        /*
+        * Título
+        */
+        echo '<table>';
+
+        echo '<tr>';
+        echo '<td colspan="' . (!empty($rows) ? count($rows[0]) : 1) . '" class="titulo">';
+        echo htmlspecialchars($titulo);
+        echo '</td>';
+        echo '</tr>';
+
+        echo '<tr>';
+        echo '<td colspan="' . (!empty($rows) ? count($rows[0]) : 1) . '" class="fecha">';
+        echo 'Generado: ' . date('d/m/Y H:i:s');
+        echo '</td>';
+        echo '</tr>';
+
+        echo '</table>';
+
+        echo '<br>';
+
+        /*
+        * Datos
+        */
+        echo '<table>';
+
+        if (!empty($rows)) {
+
+            /*
+            * Encabezados
+            */
+            echo '<tr>';
+
+            foreach (array_keys($rows[0]) as $header) {
+
+                $nombre = ucwords(
+                    str_replace('_', ' ', $header)
+                );
+
+                echo '<th>';
+                echo htmlspecialchars($nombre);
+                echo '</th>';
             }
+
+            echo '</tr>';
+
+            /*
+            * Filas
+            */
+            foreach ($rows as $row) {
+
+                echo '<tr>';
+
+                foreach ($row as $value) {
+
+                    echo '<td>';
+                    echo htmlspecialchars((string) $value);
+                    echo '</td>';
+                }
+
+                echo '</tr>';
+            }
+
         } else {
-            fputcsv($handle, ['sin_resultados']);
-            fputcsv($handle, ['No hay datos para exportar']);
+
+            echo '<tr>';
+            echo '<td>No hay datos para exportar</td>';
+            echo '</tr>';
         }
-        fclose($handle);
+
+        echo '</table>';
+
+        echo '</body>';
+        echo '</html>';
+
         exit;
     }
 

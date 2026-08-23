@@ -1,4 +1,5 @@
 <?php
+$data = $data['data'] ?? [];
 $metrics = $data['metrics'] ?? [];
 $chartRows = $data['chart'] ?? [];
 $alerts = $data['alerts'] ?? [];
@@ -116,6 +117,7 @@ $alerts = $data['alerts'] ?? [];
                         label: 'Prestamos otorgados',
                         data: dashboardRows.map((row) => Number(row.prestamos_otorgados)),
                         backgroundColor: 'rgba(11,57,84,0.78)',
+                        yAxisID: 'y3',
                         borderRadius: 8
                     },
                     {

@@ -67,7 +67,7 @@
                     <div class="col-md-4">
                         <label class="form-label">Frecuencia</label>
                         <select name="frecuencia_pago" class="form-select" required>
-                            <?php foreach (['diario', 'semanal', 'quincenal', 'mensual'] as $frequency): ?>
+                            <?php foreach (['diario', '10 dias', 'semanal', 'quincenal', 'mensual'] as $frequency):  var_dump($frequency); ?>
                                 <option value="<?= e($frequency) ?>" <?= old('frecuencia_pago', 'mensual') === $frequency ? 'selected' : '' ?>><?= e(ucfirst($frequency)) ?></option>
                             <?php endforeach; ?>
                         </select>

@@ -187,8 +187,6 @@ class ClientController
             'situacion_laboral' => input('situacion_laboral'),
             'estado_civil' => input('estado_civil'),
             'direccion_trabajo' => input('direccion_trabajo'),
-            'latitud' => input('latitud'),
-            'longitud' => input('longitud'),
             'garante_foto' => self::storeUpload('garante_foto', 'garantes', input('garante_foto_actual')),
             'garante_nombre_completo' => input('garante_nombre_completo'),
             'garante_dni' => input('garante_dni'),
