@@ -720,17 +720,33 @@ class NotificationRepository
         )->fetchAll();
     }
 
-    public function queueUpcoming(): int
+   public function queueUpcoming(): int
     {
         $sql = 'INSERT INTO notificaciones
-                (prestamo_id, cliente_id, canal, destinatario, asunto, mensaje, fecha_programada, estado, creado_en)
+                (
+                    prestamo_id,
+                    cuota_id,
+                    cliente_id,
+                    canal,
+                    destinatario,
+                    asunto,
+                    mensaje,
+                    fecha_programada,
+                    estado,
+                    creado_en
+                )
                 SELECT DISTINCT
                     p.id,
+                    cp.id,
                     c.id,
                     "email",
                     COALESCE(c.email, ""),
                     "Recordatorio de cuota",
-                    CONCAT("Estimado/a ", c.nombres, ", su cuota del prestamo ", p.numero_prestamo, " vence el ", DATE_FORMAT(cp.fecha_vencimiento, "%d/%m/%Y")),
+                    CONCAT(
+                        "Estimado/a ", c.nombres,
+                        ", su cuota del prestamo ", p.numero_prestamo,
+                        " vence el ", DATE_FORMAT(cp.fecha_vencimiento, "%d/%m/%Y")
+                    ),
                     NOW(),
                     "pendiente",
                     NOW()
@@ -738,7 +754,13 @@ class NotificationRepository
                 INNER JOIN prestamos p ON p.id = cp.prestamo_id
                 INNER JOIN clientes c ON c.id = p.cliente_id
                 WHERE cp.estado IN ("pendiente", "parcial")
-                  AND DATEDIFF(cp.fecha_vencimiento, CURDATE()) = 3';
+                AND DATEDIFF(cp.fecha_vencimiento, CURDATE()) = 3
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM notificaciones n
+                    WHERE n.cuota_id = cp.id
+                        AND n.asunto = "Recordatorio de cuota"
+                )';
 
         return Database::connection()->exec($sql);
     }
