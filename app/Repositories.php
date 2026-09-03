@@ -520,10 +520,10 @@ class LoanRepository
                     break;
                 }
 
-                $lateFee = $this->calculateLateFeeRow($row, $loan['tasa_mora_diaria'], $paymentDate);
+                // $lateFee = $this->calculateLateFeeRow($row, $loan['tasa_mora_diaria'], $paymentDate);
                 $capitalDue = max(0, (float) $row['capital_programado'] - (float) $row['capital_pagado']);
                 $interestDue = max(0, (float) $row['interes_programado'] - (float) $row['interes_pagado']);
-                $lateDue = max(0, $lateFee - (float) $row['mora_pagada']);
+                $lateDue = max( 0, (float) $row['mora_acumulada'] - (float) $row['mora_pagada'] );
 
                 if (($capitalDue + $interestDue + $lateDue) <= 0) {
                     continue;
@@ -539,14 +539,15 @@ class LoanRepository
                 $newCapitalPaid = (float) $row['capital_pagado'] + $capitalApplied;
                 $newInterestPaid = (float) $row['interes_pagado'] + $interestApplied;
                 $newLatePaid = (float) $row['mora_pagada'] + $moraApplied;
-                $newBalance = max(0, (($capitalDue - $capitalApplied) + ($interestDue - $interestApplied) + ($lateDue - $moraApplied)));
+                $newBalance = max(0, (($capitalDue - $capitalApplied) + ($interestDue - $interestApplied)));
+                $remainingMora = max( 0, (float) $row['mora_acumulada'] - $newLatePaid );
                 $newStatus = 'pendiente';
 
-                if ($newBalance <= 0.009) {
+                if ($newBalance <= 0.009 && $remainingMora <= 0.009) {
                     $newStatus = 'pagada';
-                } elseif (strtotime(substr($paymentDate, 0, 10)) > strtotime($row['fecha_vencimiento'])) {
-                    $newStatus = $lateFee > 0 ? 'morosa' : 'vencida';
-                } elseif (($capitalApplied + $interestApplied + $moraApplied) > 0) {
+                } elseif ($remainingMora > 0.009 || strtotime(substr($paymentDate, 0, 10)) > strtotime($row['fecha_vencimiento'])) {
+                    $newStatus = 'vencida';
+                } elseif (($capitalApplied + $interestApplied) > 0) {
                     $newStatus = 'parcial';
                 }
 
@@ -554,20 +555,16 @@ class LoanRepository
                     'UPDATE cuotas_prestamo
                      SET capital_pagado = :capital_pagado,
                          interes_pagado = :interes_pagado,
-                         mora_acumulada = :mora_acumulada,
                          mora_pagada = :mora_pagada,
                          saldo_cuota = :saldo_cuota,
-                         fecha_ultimo_calculo_mora = :fecha_ultimo_calculo_mora,
                          estado = :estado
                      WHERE id = :id'
                 );
                 $updateQuota->execute([
                     'capital_pagado' => $newCapitalPaid,
                     'interes_pagado' => $newInterestPaid,
-                    'mora_acumulada' => $lateFee,
                     'mora_pagada' => $newLatePaid,
                     'saldo_cuota' => $newBalance,
-                    'fecha_ultimo_calculo_mora' => substr($paymentDate, 0, 10),
                     'estado' => $newStatus,
                     'id' => $row['id'],
                 ]);
@@ -587,20 +584,32 @@ class LoanRepository
                 'SELECT
                     COALESCE(SUM(saldo_cuota), 0) AS saldo_total,
                     COALESCE(SUM(mora_acumulada - mora_pagada), 0) AS mora_total,
-                    SUM(CASE WHEN estado IN ("vencida", "morosa") THEN 1 ELSE 0 END) AS cuotas_en_mora,
+                    SUM(CASE WHEN estado = "vencida" OR (mora_acumulada - mora_pagada) > 0.009 THEN 1 ELSE 0 END) AS cuotas_en_mora,
                     SUM(CASE WHEN estado = "pagada" THEN 1 ELSE 0 END) AS cuotas_pagadas,
+                    SUM(CASE WHEN estado != "pagada" THEN 1 ELSE 0 END) AS cuotas_pendientes,
+                    SUM(CASE WHEN (mora_acumulada - mora_pagada) > 0.009 THEN 1 ELSE 0 END) AS cuotas_con_mora,
                     COUNT(*) AS cuotas_totales
                  FROM cuotas_prestamo
                  WHERE prestamo_id = :prestamo_id'
             );
             $summaryStatement->execute(['prestamo_id' => $loanId]);
-            $summary = $summaryStatement->fetch();
+            $summary = $summaryStatement->fetch(PDO::FETCH_ASSOC);
+
+            $saldoCuotas = (float) $summary['saldo_total']; 
+            $moraTotal = (float) $summary['mora_total'];
+            $saldoPendiente = $saldoCuotas + $moraTotal;
+
+            $cuotasTotales = (int) $summary['cuotas_totales'];
+            $cuotasPagadas = (int) $summary['cuotas_pagadas'];
+            $cuotasEnMora = (int) $summary['cuotas_en_mora'];
 
             $loanStatus = 'vigente';
-            if ((float) $summary['saldo_total'] <= 0.009) {
+            if ($cuotasPagadas === $cuotasTotales &&  $moraTotal <= 0.009) {
                 $loanStatus = 'pagado';
-            } elseif ((int) $summary['cuotas_en_mora'] > 0) {
+            } elseif($cuotasEnMora > 0){
                 $loanStatus = 'moroso';
+            }else{
+                $loanStatus = 'vigente';
             }
 
             $updateLoan = $connection->prepare(
@@ -611,8 +620,8 @@ class LoanRepository
                  WHERE id = :id'
             );
             $updateLoan->execute([
-                'saldo_pendiente' => $summary['saldo_total'],
-                'total_mora' => $summary['mora_total'],
+                'saldo_pendiente' => $saldoPendiente,
+                'total_mora' => $moraTotal,
                 'estado' => $loanStatus,
                 'id' => $loanId,
             ]);
@@ -633,7 +642,9 @@ class LoanRepository
 
             return $receiptNumber;
         } catch (\Throwable $throwable) {
-            $connection->rollBack();
+            if ($connection->inTransaction()) { 
+                $connection->rollBack(); 
+            } 
             throw $throwable;
         }
     }
@@ -722,6 +733,7 @@ class NotificationRepository
 
    public function queueUpcoming(): int
     {
+
         $sql = 'INSERT INTO notificaciones
                 (
                     prestamo_id,
@@ -754,13 +766,85 @@ class NotificationRepository
                 INNER JOIN prestamos p ON p.id = cp.prestamo_id
                 INNER JOIN clientes c ON c.id = p.cliente_id
                 WHERE cp.estado IN ("pendiente", "parcial")
-                AND DATEDIFF(cp.fecha_vencimiento, CURDATE()) = 3
+                AND cp.fecha_vencimiento < CURDATE()
                 AND NOT EXISTS (
                     SELECT 1
                     FROM notificaciones n
                     WHERE n.cuota_id = cp.id
                         AND n.asunto = "Recordatorio de cuota"
                 )';
+
+        return Database::connection()->exec($sql);
+    }
+
+    public function borrarNotificacion (){
+        $sql = ' DELETE n
+            FROM notificaciones n
+            INNER JOIN cuotas_prestamo c ON c.id = n.cuota_id
+            WHERE c.estado = "pagada"
+        ';
+
+        return Database::connection()->exec($sql);
+    }
+
+    public function calcularMora (){
+        $connection = Database::connection();
+
+        $sqlGetCuotasVencidas = "
+            SELECT p.id as idPrestamo, p.tasa_mora_diaria, c.id as idCuota, c.capital_programado, c.interes_programado, 
+                c.capital_pagado, c.interes_pagado, c.mora_acumulada, c.mora_pagada, c.monto_programado, c.saldo_cuota 
+            FROM prestamos p
+            INNER JOIN cuotas_prestamo c ON c.prestamo_id = p.id
+            WHERE c.fecha_vencimiento < CURDATE() AND c.estado != 'pagada' AND (
+                c.fecha_ultimo_calculo_mora IS NULL
+                OR c.fecha_ultimo_calculo_mora < CURDATE()
+            )
+        ";
+
+        $stmt = $connection->prepare($sqlGetCuotasVencidas);
+        $stmt->execute();
+
+        $cuotasVencidas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach($cuotasVencidas as $cuota){
+            $tasaMora = $cuota['tasa_mora_diaria'];
+            $saldoCuota = $cuota['saldo_cuota'];
+            $moraDiaria = $saldoCuota*($tasaMora/100);
+
+            $sqlUpdateCuota = $connection->prepare ("
+                UPDATE cuotas_prestamo
+                SET mora_acumulada = mora_acumulada + :mora_acumulada, fecha_ultimo_calculo_mora = CURDATE(), estado = :estado
+                WHERE id = :id 
+            ");
+
+            $sqlUpdateCuota->execute([
+                'mora_acumulada' => $moraDiaria,
+                'estado' => 'vencida',
+                'id' => $cuota['idCuota']
+            ]);
+
+            $sqlUpdatePrestamo = $connection->prepare("
+                UPDATE prestamos
+                SET total_mora = total_mora + :mora, saldo_pendiente = saldo_pendiente + :mora_a, estado = :estado
+                WHERE id = :id
+            ");
+
+            $sqlUpdatePrestamo->execute([
+                'mora' => $moraDiaria,
+                'mora_a' => $moraDiaria,
+                'estado' => 'moroso',
+                'id' => $cuota['idPrestamo']
+            ]);
+        }
+    }
+
+    public function cambiarEstadoCuota() : bool {
+
+        $sql = "
+            UPDATE cuotas_prestamo
+            SET estado = 'vencida'
+            WHERE fecha_vencimiento < CURDATE() AND estado != 'pagada'
+        ";
 
         return Database::connection()->exec($sql);
     }

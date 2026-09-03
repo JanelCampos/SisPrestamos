@@ -9,26 +9,16 @@ require __DIR__ . '/../app/Services.php';
 
 use App\NotificationService;
 
-header('Content-Type: application/json; charset=utf-8');
+$notificationService = new NotificationService();
 
-try {
+$delete = $notificationService->borrarNotificacion();
 
-    $notificationService = new NotificationService();
+$result = $notificationService->queueUpcoming();
 
-    $result = $notificationService->queueUpcoming();
+// $result = $notificationService->cambiarEstadoCuota();
 
-    echo json_encode([
-        'ok' => true,
-        'cantidad' => $result,
-        'mensaje' => "Notificaciones programadas: {$result}"
-    ]);
+$notificationService->calcularMora();
 
-} catch (Throwable $e) {
-
-    http_response_code(500);
-
-    echo json_encode([
-        'ok' => false,
-        'mensaje' => $e->getMessage()
-    ]);
-}
+// echo "Notificaciones programadas: {$result}" . PHP_EOL;
+header('Location: ../public/usuarios');
+exit;

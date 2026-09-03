@@ -505,4 +505,16 @@ class NotificationService
     {
         return $this->repository->pending();
     }
+
+    public function borrarNotificacion(){
+        return $this->repository->borrarNotificacion();
+    }
+
+    public function calcularMora(){
+        return $this->repository->calcularMora();
+    }
+
+    public function cambiarEstadoCuota(){
+        return $this->repository->cambiarEstadoCuota();
+    }
 }
