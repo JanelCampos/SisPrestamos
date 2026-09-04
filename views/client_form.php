@@ -37,39 +37,39 @@ $client = $client ?? [];
                         <label class="form-label">Tipo de vivienda</label>
                         <select name="tipo_vivienda" id="" class="form-select" required>
                             <option value="">Seleccionar tipo</option>
-                            <option value="propia" <?= $client['tipo_vivienda'] === 'propia' ? 'selected' : '' ?>>Propia</option>
-                            <option value="alquilada" <?= $client['tipo_vivienda'] === 'alquilada' ? 'selected' : '' ?>>Alquilada</option>
-                            <option value="familiar" <?= $client['tipo_vivienda'] === 'familiar' ? 'selected' : '' ?>>De un familiar</option>
-                            <option value="cedida" <?= $client['tipo_vivienda'] === 'cedida' ? 'selected' : '' ?>>Cedida</option>
-                            <option value="anticresis" <?= $client['tipo_vivienda'] === 'anticresis' ? 'selected' : '' ?>>Anticresis</option>
-                            <option value="compartida" <?= $client['tipo_vivienda'] === 'compartida' ? 'selected' : '' ?>>Compartida</option>
-                            <option value="otro" <?= $client['tipo_vivienda'] === 'otro' ? 'selected' : '' ?>>Otro</option>
+                            <option value="propia" <?= isset($client['tipo_vivienda']) && $client['tipo_vivienda'] === 'propia' ? 'selected' : '' ?>>Propia</option>
+                            <option value="alquilada" <?= isset($client['tipo_vivienda']) && $client['tipo_vivienda'] === 'alquilada' ? 'selected' : '' ?>>Alquilada</option>
+                            <option value="familiar" <?= isset($client['tipo_vivienda']) && $client['tipo_vivienda'] === 'familiar' ? 'selected' : '' ?>>De un familiar</option>
+                            <option value="cedida" <?= isset($client['tipo_vivienda']) && $client['tipo_vivienda'] === 'cedida' ? 'selected' : '' ?>>Cedida</option>
+                            <option value="anticresis" <?= isset($client['tipo_vivienda']) && $client['tipo_vivienda'] === 'anticresis' ? 'selected' : '' ?>>Anticresis</option>
+                            <option value="compartida" <?= isset($client['tipo_vivienda']) && $client['tipo_vivienda'] === 'compartida' ? 'selected' : '' ?>>Compartida</option>
+                            <option value="otro" <?= isset($client['tipo_vivienda']) && $client['tipo_vivienda'] === 'otro' ? 'selected' : '' ?>>Otro</option>
                         </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Situacion laboral</label>
                         <select name="situacion_laboral" id="" class="form-select" required>
                             <option value="">Seleccionar situacion laboral</option>
-                            <option value="dependiente" <?= $client['situacion_laboral'] === 'dependiente' ? 'selected' : '' ?>>Trabajador dependiente</option>
-                            <option value="independiente" <?= $client['situacion_laboral'] === 'independiente' ? 'selected' : '' ?>>Trabajador independiente</option>
-                            <option value="empresario" <?= $client['situacion_laboral'] === 'empresario' ? 'selected' : '' ?>>Empresario / Negocio propio</option>
-                            <option value="informal" <?= $client['situacion_laboral'] === 'informal' ? 'selected' : '' ?>>Trabajo informal</option>
-                            <option value="jubilado" <?= $client['situacion_laboral'] === 'jubilado' ? 'selected' : '' ?>>Jubilado / Pensionista</option>
-                            <option value="desempleado" <?= $client['situacion_laboral'] === 'desempleado' ? 'selected' : '' ?>>Desempleado</option>
-                            <option value="estudiante" <?= $client['situacion_laboral'] === 'estudiante' ? 'selected' : '' ?>>Estudiante</option>
-                            <option value="otro" <?= $client['situacion_laboral'] === 'otro' ? 'selected' : '' ?>>Otro</option>
+                            <option value="dependiente" <?= isset($client['situacion_laboral']) && $client['situacion_laboral'] === 'dependiente' ? 'selected' : '' ?>>Trabajador dependiente</option>
+                            <option value="independiente" <?= isset($client['situacion_laboral']) && $client['situacion_laboral'] === 'independiente' ? 'selected' : '' ?>>Trabajador independiente</option>
+                            <option value="empresario" <?= isset($client['situacion_laboral']) && $client['situacion_laboral'] === 'empresario' ? 'selected' : '' ?>>Empresario / Negocio propio</option>
+                            <option value="informal" <?= isset($client['situacion_laboral']) && $client['situacion_laboral'] === 'informal' ? 'selected' : '' ?>>Trabajo informal</option>
+                            <option value="jubilado" <?= isset($client['situacion_laboral']) && $client['situacion_laboral'] === 'jubilado' ? 'selected' : '' ?>>Jubilado / Pensionista</option>
+                            <option value="desempleado" <?= isset($client['situacion_laboral']) && $client['situacion_laboral'] === 'desempleado' ? 'selected' : '' ?>>Desempleado</option>
+                            <option value="estudiante" <?= isset($client['situacion_laboral']) && $client['situacion_laboral'] === 'estudiante' ? 'selected' : '' ?>>Estudiante</option>
+                            <option value="otro" <?= isset($client['situacion_laboral']) && $client['situacion_laboral'] === 'otro' ? 'selected' : '' ?>>Otro</option>
                         </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Estado civil</label>
                         <select name="estado_civil" id="" class="form-select" required>
                             <option value="">Seleccionar estado civil</option>
-                            <option value="soltero" <?= $client['estado_civil'] === 'soltero' ? 'selected' : '' ?>>Soltero(a)</option>
-                            <option value="casado" <?= $client['estado_civil'] === 'casado' ? 'selected' : '' ?>>Casado(a)</option>
-                            <option value="conviviente" <?= $client['estado_civil'] === 'conviviente' ? 'selected' : '' ?>>Conviviente</option>
-                            <option value="divorciado" <?= $client['estado_civil'] === 'divorciado' ? 'selected' : '' ?>>Divorciado(a)</option>
-                            <option value="separado" <?= $client['estado_civil'] === 'separado' ? 'selected' : '' ?>>Separado(a)</option>
-                            <option value="viudo" <?= $client['estado_civil'] === 'viudo' ? 'selected' : '' ?>>Viudo(a)</option>
+                            <option value="soltero" <?= isset($client['estado_civil']) && $client['estado_civil'] === 'soltero' ? 'selected' : '' ?>>Soltero(a)</option>
+                            <option value="casado" <?= isset($client['estado_civil']) && $client['estado_civil'] === 'casado' ? 'selected' : '' ?>>Casado(a)</option>
+                            <option value="conviviente" <?= isset($client['estado_civil']) && $client['estado_civil'] === 'conviviente' ? 'selected' : '' ?>>Conviviente</option>
+                            <option value="divorciado" <?= isset($client['estado_civil']) && $client['estado_civil'] === 'divorciado' ? 'selected' : '' ?>>Divorciado(a)</option>
+                            <option value="separado" <?= isset($client['estado_civil']) && $client['estado_civil'] === 'separado' ? 'selected' : '' ?>>Separado(a)</option>
+                            <option value="viudo" <?= isset($client['estado_civil']) &&  $client['estado_civil'] === 'viudo' ? 'selected' : '' ?>>Viudo(a)</option>
                         </select>
                     </div>
                     <div class="col-12">

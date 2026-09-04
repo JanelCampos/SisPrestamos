@@ -37,15 +37,15 @@ $alerts = $data['alerts'] ?? [];
         <div class="card card-soft h-100">
             <div class="card-body">
                 <div class="text-secondary small text-uppercase mb-2">Prestamos vigentes</div>
-                <div class="kpi-value"><?= e((string) ($metrics['prestamos_vigentes'] ?? 0)) ?></div>
+                <div class="kpi-value text-primary"><?= e((string) ($metrics['prestamos_vigentes'] ?? 0)) ?></div>
             </div>
         </div>
     </div>
     <div class="col-12 col-md-4">
         <div class="card card-soft h-100">
             <div class="card-body">
-                <div class="text-secondary small text-uppercase mb-2">Prestamos vencidos</div>
-                <div class="kpi-value text-warning"><?= e((string) ($metrics['prestamos_vencidos'] ?? 0)) ?></div>
+                <div class="text-secondary small text-uppercase mb-2">Prestamos pagados</div>
+                <div class="kpi-value text-success"><?= e((string) ($metrics['prestamos_pagados'] ?? 0)) ?></div>
             </div>
         </div>
     </div>
@@ -83,14 +83,17 @@ $alerts = $data['alerts'] ?? [];
                 <h2 class="h5 mb-3">Alertas de cartera</h2>
                 <?php if ($alerts): ?>
                     <div class="list-group list-group-flush">
-                        <?php foreach ($alerts as $alert): ?>
+                        <?php foreach ($alerts as $alert): 
+                            $moraRestante = $alert['mora_acumulada'] - $alert['mora_pagada'];
+                            $saldoPendiente = $alert['saldo_cuota'] + $moraRestante;
+                            ?>
                             <a href="<?= e(app_url('prestamos/ver/' . $alert['id'])) ?>" class="list-group-item list-group-item-action border-0 px-0">
                                 <div class="d-flex justify-content-between align-items-start gap-3">
                                     <div>
                                         <div class="fw-semibold"><?= e($alert['cliente']) ?></div>
                                         <div class="small text-secondary"><?= e($alert['numero_prestamo']) ?> · Vence <?= e(format_date($alert['fecha_vencimiento'])) ?></div>
                                     </div>
-                                    <span class="badge text-bg-danger"><?= e(money($alert['saldo_cuota'])) ?></span>
+                                    <span class="badge text-bg-danger"><?= e(money($saldoPendiente)) ?></span>
                                 </div>
                             </a>
                         <?php endforeach; ?>

@@ -83,14 +83,19 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($loan['cuotas'] as $quota): ?>
+                            <?php foreach ($loan['cuotas'] as $quota): 
+                                $capitalRestante = $quota['capital_programado'] - $quota['capital_pagado'];
+                                $interesRestante = $quota['interes_programado'] - $quota['interes_pagado'];
+                                $moraRestante = $quota['mora_acumulada'] - $quota['mora_pagada'];
+                                $saldoRestante = $quota['saldo_cuota'] + $moraRestante;
+                                ?>
                                 <tr>
                                     <td><?= e((string) $quota['numero_cuota']) ?></td>
                                     <td><?= e(format_date($quota['fecha_vencimiento'])) ?></td>
-                                    <td><?= e(money($quota['capital_programado'])) ?></td>
-                                    <td><?= e(money($quota['interes_programado'])) ?></td>
-                                    <td><?= e(money($quota['mora_acumulada'])) ?></td>
-                                    <td><?= e(money($quota['saldo_cuota'])) ?></td>
+                                    <td><?= e(money($capitalRestante)) ?></td>
+                                    <td><?= e(money($interesRestante)) ?></td>
+                                    <td><?= e(money($moraRestante)) ?></td>
+                                    <td><?= e(money($saldoRestante)) ?></td>
                                     <td><span class="badge text-bg-light"><?= e(ucfirst($quota['estado'])) ?></span></td>
                                 </tr>
                             <?php endforeach; ?>

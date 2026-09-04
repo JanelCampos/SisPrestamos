@@ -31,10 +31,10 @@ class DashboardRepository
     {
         $sql = 'SELECT
                     COALESCE(SUM(monto_principal), 0) AS total_prestado,
-                    COALESCE(SUM(CASE WHEN estado = "pagado" THEN total_interes + total_mora ELSE 0 END), 0) AS utilidad_total,
+                    0 AS utilidad_total,
                     0 AS utilidad_mes,
                     SUM(CASE WHEN estado = "vigente" THEN 1 ELSE 0 END) AS prestamos_vigentes,
-                    SUM(CASE WHEN estado = "vencido" THEN 1 ELSE 0 END) AS prestamos_vencidos,
+                    SUM(CASE WHEN estado = "pagado" THEN 1 ELSE 0 END) AS prestamos_pagados,
                     SUM(CASE WHEN estado = "moroso" THEN 1 ELSE 0 END) AS prestamos_morosos
                 FROM prestamos';
 
@@ -47,7 +47,14 @@ class DashboardRepository
              WHERE MONTH(creado_en) = MONTH(CURDATE()) AND YEAR(creado_en) = YEAR(CURDATE())'
         )->fetch() ?: [];
 
+        $utilidadTotal = Database::connection()->query('
+            SELECT 
+                COALESCE(SUM(monto_interes), 0) + COALESCE(SUM(monto_mora), 0) AS utilidad_total
+            FROM pago_detalle_cuota
+        ')->fetch() ?: [];
+
         $loanMetrics['utilidad_mes'] = ($paymentMetrics['utilidad_mes_intereses'] ?? 0) + ($paymentMetrics['utilidad_mes_mora'] ?? 0);
+        $loanMetrics['utilidad_total'] = $utilidadTotal['utilidad_total'];
 
         return $loanMetrics;
     }
@@ -70,11 +77,12 @@ class DashboardRepository
 
     public function alerts(): array
     {
-        $sql = 'SELECT p.id, p.numero_prestamo, c.nombres AS cliente, cp.fecha_vencimiento, cp.saldo_cuota, cp.estado
+        $sql = 'SELECT p.id, p.numero_prestamo, c.nombres AS cliente, cp.fecha_vencimiento, cp.mora_acumulada, cp.mora_pagada,
+                cp.saldo_cuota, cp.estado
                 FROM cuotas_prestamo cp
                 INNER JOIN prestamos p ON p.id = cp.prestamo_id
                 INNER JOIN clientes c ON c.id = p.cliente_id
-                WHERE cp.estado IN ("vencida", "morosa")
+                WHERE cp.estado IN ("vencida")
                 ORDER BY cp.fecha_vencimiento ASC
                 LIMIT 8';
 
@@ -568,6 +576,17 @@ class LoanRepository
                     'estado' => $newStatus,
                     'id' => $row['id'],
                 ]);
+
+                if($newStatus === 'pagada'){
+                    $deleteNotification = $connection->prepare(
+                        'DELETE FROM notificaciones
+                        WHERE cuota_id = :cuota_id'
+                    );
+
+                    $deleteNotification->execute([
+                        'cuota_id' => $row['id'],
+                    ]);
+                }
 
                 if (($capitalApplied + $interestApplied + $moraApplied) > 0) {
                     $detailStatement->execute([
