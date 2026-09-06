@@ -480,3 +480,56 @@ class AdminController
         ]);
     }
 }
+
+class NotificationController
+{
+    public static function index(): void
+    {
+        require_auth();
+
+        try {
+            $notificationService = new NotificationUserService();
+
+            $notifications = $notificationService->getForUser(
+                (int) Auth::id()
+            );
+
+            json_response([
+                'success' => true,
+                'notifications' => $notifications,
+            ]);
+
+        } catch (\Throwable $throwable) {
+
+            json_response([
+                'success' => false,
+                'message' => $throwable->getMessage(),
+            ], 500);
+        }
+    }
+
+    public static function unreadCount(): void
+    {
+        require_auth();
+
+        try {
+            $notificationService = new NotificationUserService();
+
+            $count = $notificationService->getUnreadCount(
+                (int) Auth::id()
+            );
+
+            json_response([
+                'success' => true,
+                'count' => $count,
+            ]);
+
+        } catch (\Throwable $throwable) {
+
+            json_response([
+                'success' => false,
+                'message' => $throwable->getMessage(),
+            ], 500);
+        }
+    }
+}

@@ -15,6 +15,7 @@ use App\ClientController;
 use App\DashboardController;
 use App\LoanController;
 use App\ReportController;
+use App\NotificationController;
 
 $path = current_path();
 $method = request_method();
@@ -105,6 +106,12 @@ switch (true) {
         break;
     case $path === '/api/prestamos/simular' && $method === 'POST':
         LoanController::simulateApi();
+        break;
+    case $path === '/api/notificaciones' && $method === 'GET':
+        NotificationController::index();
+        break;
+    case $path === '/api/notificaciones/no-leidas' && $method === 'GET':
+        NotificationController::unreadCount();
         break;
     default:
         abort(404, 'La ruta solicitada no existe.');

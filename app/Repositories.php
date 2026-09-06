@@ -871,7 +871,7 @@ class LoanRepository
         int $loanId,
         array $data,
         int $userId
-    ): void {
+    ): int {
         $connection = Database::connection();
 
         // Verificar que el préstamo exista
@@ -929,6 +929,8 @@ class LoanRepository
                 ? $data['observacion']
                 : null,
         ]);
+
+        return (int) $connection->lastInsertId();
     }
 
     public function portfolioReport(array $filters = []): array
@@ -1129,5 +1131,141 @@ class NotificationRepository
         ";
 
         return Database::connection()->exec($sql);
+    }
+}
+
+class NotificationUserRepository
+{
+    public function notifyAdminNewPaymentRequest(
+        int $prestamoId,
+        int $solicitudCobroId,
+        int $usuarioSolicitanteId,
+        float $monto
+    ): int {
+        $connection = Database::connection();
+
+        // Obtener usuario que realizó la solicitud
+        $userStatement = $connection->prepare(
+            'SELECT usuario
+             FROM usuarios
+             WHERE id = :id
+             LIMIT 1'
+        );
+
+        $userStatement->execute([
+            'id' => $usuarioSolicitanteId,
+        ]);
+
+        $solicitante = $userStatement->fetch(PDO::FETCH_ASSOC);
+
+        if (!$solicitante) {
+            throw new \RuntimeException(
+                'No se encontró el usuario que realizó la solicitud.'
+            );
+        }
+
+        // Buscar únicamente al administrador total
+        $adminStatement = $connection->query(
+            'SELECT u.id
+             FROM usuarios u
+             INNER JOIN roles r ON r.id = u.rol_id
+             WHERE r.nombre = "administrador total"
+             AND u.estado = "activo"'
+        );
+
+        $admins = $adminStatement->fetchAll(PDO::FETCH_COLUMN);
+
+        if (!$admins) {
+            return 0;
+        }
+
+        // Preparar inserción de notificación
+        $notificationStatement = $connection->prepare(
+            'INSERT INTO notificaciones_usuario
+             (
+                 usuario_id,
+                 tipo,
+                 titulo,
+                 mensaje,
+                 prestamo_id,
+                 solicitud_cobro_id
+             )
+             VALUES
+             (
+                 :usuario_id,
+                 :tipo,
+                 :titulo,
+                 :mensaje,
+                 :prestamo_id,
+                 :solicitud_cobro_id
+             )'
+        );
+
+        $count = 0;
+
+        foreach ($admins as $adminId) {
+            $notificationStatement->execute([
+                'usuario_id' => (int) $adminId,
+                'tipo' => 'solicitud_cobro',
+                'titulo' => 'Nueva solicitud de cobro',
+                'mensaje' => sprintf(
+                    '%s solicita un cobro de S/ %.2f.',
+                    $solicitante['usuario'],
+                    $monto
+                ),
+                'prestamo_id' => $prestamoId,
+                'solicitud_cobro_id' => $solicitudCobroId,
+            ]);
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    public function getForUser(int $userId): array
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'SELECT
+                n.id,
+                n.tipo,
+                n.titulo,
+                n.mensaje,
+                n.prestamo_id,
+                n.solicitud_cobro_id,
+                n.leida,
+                n.creado_en,
+                n.leida_en
+            FROM notificaciones_usuario n
+            WHERE n.usuario_id = :usuario_id
+            ORDER BY n.creado_en DESC
+            LIMIT 20'
+        );
+
+        $statement->execute([
+            'usuario_id' => $userId,
+        ]);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getUnreadCount(int $userId): int
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'SELECT COUNT(*)
+            FROM notificaciones_usuario
+            WHERE usuario_id = :usuario_id
+            AND leida = 0'
+        );
+
+        $statement->execute([
+            'usuario_id' => $userId,
+        ]);
+
+        return (int) $statement->fetchColumn();
     }
 }

@@ -209,17 +209,57 @@ class LoanService
         return $this->repository->recordPayment($loanId, $payload, $userId);
     }
 
-    public function requestPaymentAuthorization(int $loanId, array $payload, int $userId): void
-    {
-        if (empty($payload['monto_recibido']) || (float) $payload['monto_recibido'] <= 0) {
-            throw new \InvalidArgumentException('El monto recibido debe ser mayor que cero.');
+    public function requestPaymentAuthorization(
+        int $loanId,
+        array $payload,
+        int $userId
+    ): void {
+        if (
+            empty($payload['monto_recibido'])
+            || (float) $payload['monto_recibido'] <= 0
+        ) {
+            throw new \InvalidArgumentException(
+                'El monto recibido debe ser mayor que cero.'
+            );
         }
 
         if (empty($payload['metodo_pago'])) {
-            throw new \InvalidArgumentException('Selecciona un metodo de pago.');
+            throw new \InvalidArgumentException(
+                'Selecciona un metodo de pago.'
+            );
         }
 
-        $this->repository->requestPaymentAuthorization($loanId, $payload, $userId);
+        $connection = Database::connection();
+
+        $connection->beginTransaction();
+
+        try {
+
+            $solicitudCobroId = $this->repository->requestPaymentAuthorization(
+                $loanId,
+                $payload,
+                $userId
+            );
+
+            $notificationUserService = new NotificationUserService();
+
+            $notificationUserService->notifyAdminNewPaymentRequest(
+                $loanId,
+                $solicitudCobroId,
+                $userId,
+                (float) $payload['monto_recibido']
+            );
+
+            $connection->commit();
+
+        } catch (\Throwable $throwable) {
+
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+
+            throw $throwable;
+        }
     }
 
     public function exportReport(string $type, array $filters = []): array
@@ -529,5 +569,39 @@ class NotificationService
 
     public function cambiarEstadoCuota(){
         return $this->repository->cambiarEstadoCuota();
+    }
+}
+
+class NotificationUserService
+{
+    private NotificationUserRepository $repository;
+
+    public function __construct()
+    {
+        $this->repository = new NotificationUserRepository();
+    }
+
+    public function notifyAdminNewPaymentRequest(
+        int $prestamoId,
+        int $solicitudCobroId,
+        int $usuarioSolicitanteId,
+        float $monto
+    ): int {
+        return $this->repository->notifyAdminNewPaymentRequest(
+            $prestamoId,
+            $solicitudCobroId,
+            $usuarioSolicitanteId,
+            $monto
+        );
+    }
+
+    public function getForUser(int $userId): array
+    {
+        return $this->repository->getForUser($userId);
+    }
+
+    public function getUnreadCount(int $userId): int
+    {
+        return $this->repository->getUnreadCount($userId);
     }
 }
