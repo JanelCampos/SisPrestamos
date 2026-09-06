@@ -306,15 +306,8 @@
                     <div class="d-flex align-items-center gap-3">
 
                         <div class="text-end">
-
-                            <div class="fw-semibold">
-                                <?= e($user['nombre_completo'] ?? '') ?>
-                            </div>
-
-                            <small class="text-secondary text-uppercase">
-                                <?= e($user['role_name'] ?? '') ?>
-                            </small>
-
+                            <div class="fw-semibold"> <?= e($user['nombre_completo'] ?? '') ?></div>
+                            <small class="text-secondary text-uppercase"> <?= e($user['role_name'] ?? '') ?></small>
                         </div>
 
 

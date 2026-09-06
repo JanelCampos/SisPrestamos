@@ -209,6 +209,19 @@ class LoanService
         return $this->repository->recordPayment($loanId, $payload, $userId);
     }
 
+    public function requestPaymentAuthorization(int $loanId, array $payload, int $userId): void
+    {
+        if (empty($payload['monto_recibido']) || (float) $payload['monto_recibido'] <= 0) {
+            throw new \InvalidArgumentException('El monto recibido debe ser mayor que cero.');
+        }
+
+        if (empty($payload['metodo_pago'])) {
+            throw new \InvalidArgumentException('Selecciona un metodo de pago.');
+        }
+
+        $this->repository->requestPaymentAuthorization($loanId, $payload, $userId);
+    }
+
     public function exportReport(string $type, array $filters = []): array
     {
         $rows = $type === 'cobros'

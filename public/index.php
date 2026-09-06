@@ -76,6 +76,9 @@ switch (true) {
     case preg_match('#^/prestamos/(\d+)/pago$#', $path, $matches) === 1 && $method === 'POST':
         LoanController::recordPayment((int) $matches[1]);
         break;
+    case preg_match('#^/prestamos/(\d+)/solicitud-cobro$#', $path, $matches) === 1 && $method === 'POST':
+        LoanController::requestPaymentAuthorization((int) $matches[1]);
+        break;
     case $path === '/reportes' && $method === 'GET':
         ReportController::index();
         break;
@@ -84,6 +87,15 @@ switch (true) {
         break;
     case $path === '/usuarios' && $method === 'GET':
         AdminController::users();
+        break;
+    case $path === '/solicitudes-cobro' && $method === 'GET':
+        AdminController::paymentRequests();
+        break;
+    case preg_match('#^/solicitudes-cobro/(\d+)/aprobar$#', $path, $matches) === 1 && $method === 'POST':
+        AdminController::approvePaymentRequest((int) $matches[1]);
+        break;
+    case preg_match('#^/solicitudes-cobro/(\d+)/rechazar$#', $path, $matches) === 1 && $method === 'POST':
+        AdminController::rejectPaymentRequest((int) $matches[1]);
         break;
     case $path === '/configuracion' && $method === 'GET':
         AdminController::settings();

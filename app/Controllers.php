@@ -267,19 +267,26 @@ class LoanController
         }
     }
 
-    public static function show(int $id): void
-    {
-        require_auth();
-        $loan = (new LoanService())->find($id);
+    public static function show(int $id): void 
+    { 
+        require_auth(); 
 
-        if (!$loan) {
-            abort(404, 'Prestamo no encontrado.');
+        $loan = (new LoanService())->find($id); 
+    
+        if (!$loan) { 
+            abort(404, 'Prestamo no encontrado.'); 
         }
 
-        render('loan_show', [
-            'title' => 'Detalle del prestamo',
+        $paymentRequest = (new LoanRepository())->latestPaymentRequest(
+            $id,
+            (int) Auth::id()
+        );
+    
+        render('loan_show', [ 
+            'title' => 'Detalle del prestamo', 
             'loan' => $loan,
-        ]);
+            'paymentRequest' => $paymentRequest,
+        ]); 
     }
 
     public static function recordPayment(int $id): void
@@ -295,6 +302,29 @@ class LoanController
                 'observacion' => input('observacion'),
             ], (int) Auth::id());
             flash('success', 'Pago registrado correctamente. Recibo: ' . $receipt);
+        } catch (\Throwable $throwable) {
+            flash('danger', $throwable->getMessage());
+        }
+
+        redirect_to('prestamos/ver/' . $id);
+    }
+
+    public static function requestPaymentAuthorization(int $id): void
+    {
+        require_auth(['cobrador']);
+        verify_csrf();
+
+        try {
+            $loanService = new LoanService();
+
+            $loanService->requestPaymentAuthorization($id, [
+                'monto_recibido' => input('monto_recibido'),
+                'metodo_pago' => input('metodo_pago'),
+                'fecha_pago' => input('fecha_pago'),
+                'observacion' => input('observacion'),
+            ], (int) Auth::id());
+
+            flash('success', 'Solicitud de autorización enviada correctamente.');
         } catch (\Throwable $throwable) {
             flash('danger', $throwable->getMessage());
         }
@@ -384,6 +414,60 @@ class AdminController
             'roles' => $userRepository->roles(),
             'pendingNotifications' => $notificationService->pending(),
         ]);
+    }
+
+    public static function paymentRequests(): void
+    {
+        require_auth(['administrador total']);
+
+        $loanRepository = new LoanRepository();
+
+        render('payment_requests', [
+            'title' => 'Solicitudes de cobro',
+            'requests' => $loanRepository->pendingPaymentRequests(),
+        ]);
+    }
+
+    public static function approvePaymentRequest(int $id): void
+    {
+        require_auth(['administrador total']);
+        verify_csrf();
+
+        try {
+            $loanRepository = new LoanRepository();
+
+            $loanRepository->approvePaymentRequest(
+                $id,
+                (int) Auth::id()
+            );
+
+            flash('success', 'Solicitud de cobro aprobada correctamente.');
+        } catch (\Throwable $throwable) {
+            flash('danger', $throwable->getMessage());
+        }
+
+        redirect_to('solicitudes-cobro');
+    }
+
+    public static function rejectPaymentRequest(int $id): void
+    {
+        require_auth(['administrador total']);
+        verify_csrf();
+
+        try {
+            $loanRepository = new LoanRepository();
+
+            $loanRepository->rejectPaymentRequest(
+                $id,
+                (int) Auth::id()
+            );
+
+            flash('success', 'Solicitud de cobro rechazada correctamente.');
+        } catch (\Throwable $throwable) {
+            flash('danger', $throwable->getMessage());
+        }
+
+        redirect_to('solicitudes-cobro');
     }
 
     public static function settings(): void

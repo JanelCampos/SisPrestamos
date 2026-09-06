@@ -317,6 +317,115 @@ class LoanRepository
         return $statement->fetchAll();
     }
 
+    public function pendingPaymentRequests(): array
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'SELECT
+                sc.id,
+                sc.prestamo_id,
+                sc.usuario_solicitante_id,
+                sc.monto_recibido,
+                sc.metodo_pago,
+                sc.fecha_pago,
+                sc.observacion,
+                sc.estado,
+                sc.creado_en,
+
+                p.numero_prestamo,
+
+                u.nombre_completo AS cobrador
+
+            FROM solicitudes_cobro sc
+
+            INNER JOIN prestamos p
+                ON p.id = sc.prestamo_id
+
+            INNER JOIN usuarios u
+                ON u.id = sc.usuario_solicitante_id
+
+            WHERE sc.estado = "pendiente"
+
+            ORDER BY sc.creado_en ASC'
+        );
+
+        $statement->execute();
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function approvePaymentRequest(int $requestId, int $approverId): void
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'UPDATE solicitudes_cobro
+            SET estado = "aprobada",
+                usuario_aprobador_id = :usuario_aprobador_id,
+                aprobado_en = NOW()
+            WHERE id = :id
+            AND estado = "pendiente"'
+        );
+
+        $statement->execute([
+            'usuario_aprobador_id' => $approverId,
+            'id' => $requestId,
+        ]);
+
+        if ($statement->rowCount() === 0) {
+            throw new \RuntimeException(
+                'La solicitud no existe o ya fue procesada.'
+            );
+        }
+    }
+
+    public function rejectPaymentRequest(int $requestId, int $approverId): void
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'UPDATE solicitudes_cobro
+            SET estado = "rechazada",
+                usuario_aprobador_id = :usuario_aprobador_id,
+                rechazado_en = NOW()
+            WHERE id = :id
+            AND estado = "pendiente"'
+        );
+
+        $statement->execute([
+            'usuario_aprobador_id' => $approverId,
+            'id' => $requestId,
+        ]);
+
+        if ($statement->rowCount() === 0) {
+            throw new \RuntimeException(
+                'La solicitud no existe o ya fue procesada.'
+            );
+        }
+    }
+
+    public function latestPaymentRequest(int $loanId, int $userId): ?array
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'SELECT *
+            FROM solicitudes_cobro
+            WHERE prestamo_id = :prestamo_id
+            AND usuario_solicitante_id = :usuario_id
+            ORDER BY id DESC
+            LIMIT 1'
+        );
+
+        $statement->execute([
+            'prestamo_id' => $loanId,
+            'usuario_id' => $userId,
+        ]);
+
+        return $statement->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
     public function hasBlockingDebt(int $clientId): bool
     {
         $statement = Database::connection()->prepare(
@@ -485,8 +594,75 @@ class LoanRepository
             $loanStatement->execute(['id' => $loanId]);
             $loan = $loanStatement->fetch();
 
+            if ($loan['estado'] === 'pagado') {
+                throw new \RuntimeException(
+                    'El préstamo ya está pagado completamente.'
+                );
+            }
+
             if (!$loan) {
                 throw new \RuntimeException('El prestamo no existe.');
+            }
+
+            $userStatement = $connection->prepare(
+                'SELECT 
+                    u.id,
+                    r.nombre AS role_name
+                FROM usuarios u
+                INNER JOIN roles r ON r.id = u.rol_id
+                WHERE u.id = :id
+                LIMIT 1'
+            );
+
+            $userStatement->execute([
+                'id' => $userId,
+            ]);
+
+            $user = $userStatement->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) {
+                throw new \RuntimeException('El usuario no existe.');
+            }
+
+            $isCobrador = $user['role_name'] === 'cobrador';
+
+            $paymentRequest = null;
+
+            $paymentAmount = (float) $data['monto_recibido'];
+
+            if ($isCobrador) {
+
+                $paymentRequestStatement = $connection->prepare(
+                    'SELECT *
+                    FROM solicitudes_cobro
+                    WHERE prestamo_id = :prestamo_id
+                    AND usuario_solicitante_id = :usuario_id
+                    AND estado = "aprobada"
+                    ORDER BY id DESC
+                    LIMIT 1
+                    FOR UPDATE'
+                );
+
+                $paymentRequestStatement->execute([
+                    'prestamo_id' => $loanId,
+                    'usuario_id' => $userId,
+                ]);
+
+                $paymentRequest = $paymentRequestStatement->fetch(PDO::FETCH_ASSOC);
+
+                if (!$paymentRequest) {
+                    throw new \RuntimeException(
+                        'No existe una solicitud de cobro aprobada para este prestamo.'
+                    );
+                }
+
+                $requestedAmount = (float) $paymentRequest['monto_recibido'];
+
+                if (abs($paymentAmount - $requestedAmount) > 0.009) {
+                    throw new \RuntimeException(
+                        'El monto del cobro no coincide con el monto aprobado en la solicitud.'
+                    );
+                }
             }
 
             $paymentAmount = (float) $data['monto_recibido'];
@@ -510,6 +686,29 @@ class LoanRepository
             ]);
 
             $paymentId = (int) $connection->lastInsertId();
+
+            if ($isCobrador && $paymentRequest) {
+                $updateRequest = $connection->prepare(
+                    'UPDATE solicitudes_cobro
+                    SET estado = "utilizada",
+                        pago_id = :pago_id,
+                        utilizado_en = NOW()
+                    WHERE id = :id
+                    AND estado = "aprobada"'
+                );
+
+                $updateRequest->execute([
+                    'pago_id' => $paymentId,
+                    'id' => $paymentRequest['id'],
+                ]);
+
+                if ($updateRequest->rowCount() !== 1) {
+                    throw new \RuntimeException(
+                        'No se pudo marcar la solicitud de cobro como utilizada.'
+                    );
+                }
+            }
+
             $detailStatement = $connection->prepare(
                 'INSERT INTO pago_detalle_cuota
                 (pago_id, cuota_id, monto_capital, monto_interes, monto_mora, creado_en)
@@ -666,6 +865,70 @@ class LoanRepository
             } 
             throw $throwable;
         }
+    }
+
+    public function requestPaymentAuthorization(
+        int $loanId,
+        array $data,
+        int $userId
+    ): void {
+        $connection = Database::connection();
+
+        // Verificar que el préstamo exista
+        $loanStatement = $connection->prepare(
+            'SELECT id
+            FROM prestamos
+            WHERE id = :id
+            LIMIT 1'
+        );
+
+        $loanStatement->execute([
+            'id' => $loanId,
+        ]);
+
+        if (!$loanStatement->fetch()) {
+            throw new \RuntimeException('El prestamo no existe.');
+        }
+
+        $paymentDate = !empty($data['fecha_pago'])
+            ? $data['fecha_pago']
+            : date('Y-m-d H:i:s');
+
+        $statement = $connection->prepare(
+            'INSERT INTO solicitudes_cobro
+            (
+                prestamo_id,
+                usuario_solicitante_id,
+                monto_recibido,
+                metodo_pago,
+                fecha_pago,
+                observacion,
+                estado,
+                creado_en
+            )
+            VALUES
+            (
+                :prestamo_id,
+                :usuario_solicitante_id,
+                :monto_recibido,
+                :metodo_pago,
+                :fecha_pago,
+                :observacion,
+                "pendiente",
+                NOW()
+            )'
+        );
+
+        $statement->execute([
+            'prestamo_id' => $loanId,
+            'usuario_solicitante_id' => $userId,
+            'monto_recibido' => (float) $data['monto_recibido'],
+            'metodo_pago' => $data['metodo_pago'],
+            'fecha_pago' => $paymentDate,
+            'observacion' => !empty($data['observacion'])
+                ? $data['observacion']
+                : null,
+        ]);
     }
 
     public function portfolioReport(array $filters = []): array

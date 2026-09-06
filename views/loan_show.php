@@ -32,31 +32,171 @@
                     <h2 class="h5 mb-0">Registrar pago</h2>
                     <small class="text-secondary">Aplica automaticamente mora, interes y capital.</small>
                 </div>
-                <form method="post" action="<?= e(app_url('prestamos/' . $loan['id'] . '/pago')) ?>" class="row g-3">
+                <form method="post" action="<?= e(app_url('prestamos/' . $loan['id'] . '/pago')) ?>" class="row g-3" id='formSolicitudCobro'>
                     <?= csrf_field() ?>
                     <div class="col-md-3">
                         <label class="form-label">Monto recibido</label>
-                        <input type="number" step="0.01" min="0" name="monto_recibido" class="form-control" required>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            name="monto_recibido"
+                            class="form-control"
+                            value="<?= $paymentRequest && $paymentRequest['estado'] === 'aprobada'
+                                ? e($paymentRequest['monto_recibido'])
+                                : '' ?>"
+                            <?= $paymentRequest && $paymentRequest['estado'] === 'aprobada' ? 'readonly' : '' ?>
+                            required
+                        >
                     </div>
+
                     <div class="col-md-3">
-                        <label class="form-label">Metodo de pago</label>
-                        <select name="metodo_pago" class="form-select" required>
-                            <option value="efectivo">Efectivo</option>
-                            <option value="transferencia">Transferencia</option>
-                            <option value="yape">Yape</option>
-                            <option value="deposito">Deposito</option>
+                        <label class="form-label">Método de pago</label>
+                        <select
+                            name="metodo_pago"
+                            class="form-select"
+                            <?= $paymentRequest && $paymentRequest['estado'] === 'aprobada' ? 'disabled' : '' ?>
+                            required
+                        >
+                            <option value="efectivo"
+                                <?= ($paymentRequest && $paymentRequest['estado'] === 'aprobada' && $paymentRequest['metodo_pago'] === 'efectivo') ? 'selected' : '' ?>>
+                                Efectivo
+                            </option>
+
+                            <option value="transferencia"
+                                <?= ($paymentRequest && $paymentRequest['estado'] === 'aprobada' && $paymentRequest['metodo_pago'] === 'transferencia') ? 'selected' : '' ?>>
+                                Transferencia
+                            </option>
+
+                            <option value="yape"
+                                <?= ($paymentRequest && $paymentRequest['estado'] === 'aprobada' && $paymentRequest['metodo_pago'] === 'yape') ? 'selected' : '' ?>>
+                                Yape
+                            </option>
+
+                            <option value="deposito"
+                                <?= ($paymentRequest && $paymentRequest['estado'] === 'aprobada' && $paymentRequest['metodo_pago'] === 'deposito') ? 'selected' : '' ?>>
+                                Depósito
+                            </option>
                         </select>
+
+                        <?php if ($paymentRequest && $paymentRequest['estado'] === 'aprobada'): ?>
+                            <input
+                                type="hidden"
+                                name="metodo_pago"
+                                value="<?= e($paymentRequest['metodo_pago']) ?>"
+                            >
+                        <?php endif; ?>
                     </div>
+
                     <div class="col-md-3">
                         <label class="form-label">Fecha de pago</label>
-                        <input type="datetime-local" name="fecha_pago" class="form-control" value="<?= e(date('Y-m-d\TH:i')) ?>">
+                        <input
+                            type="datetime-local"
+                            name="fecha_pago"
+                            class="form-control"
+                            value="<?= e(date('Y-m-d\TH:i')) ?>"
+                        >
                     </div>
+
                     <div class="col-md-3">
-                        <label class="form-label">Observacion</label>
-                        <input type="text" name="observacion" class="form-control" placeholder="Pago parcial, refinanciacion, etc.">
+                        <label class="form-label">Observación</label>
+                        <input
+                            type="text"
+                            name="observacion"
+                            class="form-control"
+                            value="<?= $paymentRequest && $paymentRequest['estado'] === 'aprobada'
+                                ? e($paymentRequest['observacion'] ?? '')
+                                : '' ?>"
+                            placeholder="Pago parcial, refinanciación, etc."
+                        >
                     </div>
+
                     <div class="col-12 text-end">
-                        <button type="submit" class="btn btn-primary">Registrar cobro</button>
+
+                        <?php if ($user['role_name'] === 'cobrador'): ?>
+
+                            <?php if ($loan['estado'] === 'pagado'): ?>
+
+                                <!-- No mostrar ningún botón -->
+
+                            <?php elseif (!$paymentRequest): ?>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-warning"
+                                    id="btnSolicitarAutorizacion"
+                                >
+                                    Solicitar autorización
+                                </button>
+
+                            <?php elseif ($paymentRequest['estado'] === 'pendiente'): ?>
+
+                                <div class="text-warning mb-2">
+                                    <strong>Solicitud pendiente de autorización</strong>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary"
+                                    disabled
+                                >
+                                    Esperando autorización
+                                </button>
+
+                            <?php elseif ($paymentRequest['estado'] === 'rechazada'): ?>
+
+                                <div class="text-danger mb-2">
+                                    <strong>Solicitud rechazada</strong>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-warning"
+                                    id="btnSolicitarAutorizacion"
+                                >
+                                    Solicitar nuevamente
+                                </button>
+
+                            <?php elseif ($paymentRequest['estado'] === 'aprobada'): ?>
+
+                                <div class="text-success mb-2">
+                                    <strong>Solicitud aprobada</strong>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary"
+                                >
+                                    Registrar cobro
+                                </button>
+
+                            <?php elseif ($paymentRequest['estado'] === 'utilizada'): ?>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-warning"
+                                    id="btnSolicitarAutorizacion"
+                                >
+                                    Solicitar autorización
+                                </button>
+
+                            <?php endif; ?>
+
+                        <?php else: ?>
+
+                            <?php if ($loan['estado'] !== 'pagado'): ?>
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary"
+                                >
+                                    Registrar cobro
+                                </button>
+
+                            <?php endif; ?>
+
+                        <?php endif; ?>
+
                     </div>
                 </form>
             </div>
@@ -157,3 +297,23 @@
         </div>
     </div>
 </div>
+
+<script>
+    const formSolicitudCobro = document.getElementById('formSolicitudCobro');
+    const btnSolicitarAutorizacion = document.getElementById('btnSolicitarAutorizacion');
+
+    if (formSolicitudCobro && btnSolicitarAutorizacion) {
+        btnSolicitarAutorizacion.addEventListener('click', function () {
+
+            if (!formSolicitudCobro.checkValidity()) {
+                formSolicitudCobro.reportValidity();
+                return;
+            }
+
+            formSolicitudCobro.action =
+                '<?= e(app_url('prestamos/' . $loan['id'] . '/solicitud-cobro')) ?>';
+
+            formSolicitudCobro.submit();
+        });
+    }
+</script>
