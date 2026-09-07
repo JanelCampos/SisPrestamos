@@ -1315,3 +1315,97 @@ class NotificationUserRepository
         return $statement->rowCount() > 0;
     }
 }
+
+class PushSubscriptionRepository
+{
+    /**
+     * Guarda o actualiza una suscripción Push.
+     */
+    public function save(
+        int $userId,
+        string $endpoint,
+        string $p256dh,
+        string $auth
+    ): void {
+        $connection = Database::connection();
+
+        // Verificamos si esta suscripción ya existe.
+        $statement = $connection->prepare(
+            'SELECT id
+             FROM dispositivos_push
+             WHERE endpoint = :endpoint
+             LIMIT 1'
+        );
+
+        $statement->execute([
+            'endpoint' => $endpoint,
+        ]);
+
+        $existingId = $statement->fetchColumn();
+
+        if ($existingId !== false) {
+
+            $updateStatement = $connection->prepare(
+                'UPDATE dispositivos_push
+                 SET
+                     usuario_id = :usuario_id,
+                     p256dh = :p256dh,
+                     auth = :auth
+                 WHERE id = :id
+                 LIMIT 1'
+            );
+
+            $updateStatement->execute([
+                'usuario_id' => $userId,
+                'p256dh' => $p256dh,
+                'auth' => $auth,
+                'id' => (int) $existingId,
+            ]);
+
+            return;
+        }
+
+        $insertStatement = $connection->prepare(
+            'INSERT INTO dispositivos_push
+             (
+                 usuario_id,
+                 endpoint,
+                 p256dh,
+                 auth
+             )
+             VALUES
+             (
+                 :usuario_id,
+                 :endpoint,
+                 :p256dh,
+                 :auth
+             )'
+        );
+
+        $insertStatement->execute([
+            'usuario_id' => $userId,
+            'endpoint' => $endpoint,
+            'p256dh' => $p256dh,
+            'auth' => $auth,
+        ]);
+    }
+
+    /**
+     * Elimina una suscripción Push.
+     */
+    public function deleteByEndpoint(string $endpoint): bool
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'DELETE FROM dispositivos_push
+             WHERE endpoint = :endpoint'
+        );
+
+        $statement->execute([
+            'endpoint' => $endpoint,
+        ]);
+
+        return $statement->rowCount() > 0;
+    }
+}

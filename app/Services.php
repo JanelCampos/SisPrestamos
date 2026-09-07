@@ -615,3 +615,34 @@ class NotificationUserService
         );
     }
 }
+
+class PushSubscriptionService
+{
+    private PushSubscriptionRepository $repository;
+
+    public function __construct()
+    {
+        $this->repository = new PushSubscriptionRepository();
+    }
+
+    public function save(
+        int $userId,
+        string $endpoint,
+        string $p256dh,
+        string $auth
+    ): void {
+        $this->repository->save(
+            $userId,
+            $endpoint,
+            $p256dh,
+            $auth
+        );
+    }
+
+    public function deleteByEndpoint(string $endpoint): bool
+    {
+        return $this->repository->deleteByEndpoint(
+            $endpoint
+        );
+    }
+}
