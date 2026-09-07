@@ -68,6 +68,10 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(219,229,240,.8);
             border-radius: 1rem;
+
+            /* Permite que el menú de notificaciones quede encima */
+            position: relative;
+            z-index: 1050;
         }
 
         /* =====================================================
@@ -89,6 +93,34 @@
             color: #fff;
         }
 
+        .notification-container {
+            position: relative;
+            z-index: 2000;
+        }
+
+        #notificationDropdown {
+            z-index: 2001 !important;
+        }
+
+        .notification-unread {
+            background-color: #f1f3f5;
+            border-left: 4px solid #0d6efd;
+        }
+
+        .notification-unread .notification-title {
+            font-weight: 600;
+        }
+
+        .notification-unread::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            background-color: #0d6efd;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
         /* En celular el sidebar funciona como menú lateral */
         @media (max-width: 991.98px) {
 
@@ -98,7 +130,7 @@
                 left: 0;
                 width: 280px;
                 height: 100vh;
-                z-index: 1050;
+                z-index: 3000;
 
                 transform: translateX(-100%);
                 transition: transform .3s ease;
@@ -116,7 +148,7 @@
                 position: fixed;
                 inset: 0;
                 background: rgba(0, 0, 0, .45);
-                z-index: 1040;
+                z-index: 2990;  
             }
 
             .sidebar-overlay.show {
@@ -249,6 +281,18 @@
 
                     </a>
 
+                    <?php if (\App\Auth::hasRole('administrador total')): ?>
+
+                        <a
+                            class="nav-link <?= is_active_route('/solicitudes-cobro') ? 'active' : '' ?>"
+                            href="<?= e(app_url('solicitudes-cobro')) ?>">
+
+                            <i class="bi bi-cash-coin me-2"></i>Solicitudes de cobro
+
+                        </a>
+
+                    <?php endif; ?>
+
                     <a
                         class="nav-link <?= is_active_route('/reportes') ? 'active' : '' ?>"
                         href="<?= e(app_url('reportes')) ?>">
@@ -280,8 +324,6 @@
                 </nav>
 
             </aside>
-
-
             <!-- =====================================================
                  CONTENIDO PRINCIPAL
                  ===================================================== -->
@@ -306,25 +348,61 @@
                     <div class="d-flex align-items-center gap-3">
 
                         <div class="text-end">
-                            <div class="fw-semibold"> <?= e($user['nombre_completo'] ?? '') ?></div>
-                            <small class="text-secondary text-uppercase"> <?= e($user['role_name'] ?? '') ?></small>
+                            <div class="fw-semibold">
+                                <?= e($user['nombre_completo'] ?? '') ?>
+                            </div>
+
+                            <small class="text-secondary text-uppercase">
+                                <?= e($user['role_name'] ?? '') ?>
+                            </small>
                         </div>
 
-
-                        <form
-                            method="post"
-                            action="<?= e(app_url('logout')) ?>">
-
-                            <?= csrf_field() ?>
+                        <!-- NOTIFICACIONES -->
+                        <div class="dropdown position-relative notification-container">
 
                             <button
-                                type="submit"
-                                class="btn btn-outline-danger btn-sm">
+                                type="button"
+                                class="btn btn-outline-secondary position-relative"
+                                id="notificationButton"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                title="Notificaciones"
+                            >
+                                <i class="bi bi-bell"></i>
 
-                                Salir
-
+                                <span
+                                    id="notificationBadge"
+                                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none"
+                                    id="notificationBadge"
+                                >
+                                    0
+                                </span>
                             </button>
 
+                            <div
+                                class="dropdown-menu dropdown-menu-end shadow"
+                                id="notificationDropdown"
+                                style="width: 360px; max-height: 450px; overflow-y: auto;"
+                            >
+                                <div class="px-3 py-2 border-bottom">
+                                    <strong>Notificaciones</strong>
+                                </div>
+
+                                <div id="notificationList">
+                                    <div class="text-center text-secondary py-4">
+                                        Cargando...
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <form method="post" action="<?= e(app_url('logout')) ?>">
+                            <?= csrf_field() ?>
+
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                Salir
+                            </button>
                         </form>
 
                     </div>
@@ -429,6 +507,333 @@
     }
 
 </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const notificationBadge = document.getElementById('notificationBadge');
+        const notificationList = document.getElementById('notificationList');
+
+        if (!notificationBadge || !notificationList) {
+            return;
+        }
+
+        /*
+        * Obtiene la cantidad de notificaciones no leídas
+        */
+        async function loadUnreadCount() {
+
+            try {
+
+                const response = await fetch(
+                    '<?= e(app_url('/api/notificaciones/no-leidas')) ?>',
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    return;
+                }
+
+                const count = Number(data.count) || 0;
+
+                if (count > 0) {
+
+                    notificationBadge.textContent =
+                        count > 99 ? '99+' : count;
+
+                    notificationBadge.classList.remove('d-none');
+
+                } else {
+
+                    notificationBadge.classList.add('d-none');
+
+                }
+
+            } catch (error) {
+
+                console.error(
+                    'Error al cargar contador de notificaciones:',
+                    error
+                );
+
+            }
+        }
+
+
+        /*
+        * Obtiene las notificaciones del usuario
+        */
+        async function loadNotifications() {
+
+            notificationList.innerHTML = `
+                <div class="text-center text-secondary py-4">
+                    Cargando...
+                </div>
+            `;
+
+            try {
+
+                const response = await fetch(
+                    '<?= e(app_url('/api/notificaciones')) ?>',
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!data.success) {
+
+                    notificationList.innerHTML = `
+                        <div class="text-center text-danger py-4">
+                            No se pudieron cargar las notificaciones.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+                const notifications = data.notifications || [];
+
+                if (notifications.length === 0) {
+
+                    notificationList.innerHTML = `
+                        <div class="text-center text-secondary py-4">
+                            <i class="bi bi-bell-slash fs-3 d-block mb-2"></i>
+                            No tienes notificaciones.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+                notificationList.innerHTML = '';
+
+                notifications.forEach(notification => {
+
+                    const item = document.createElement('div');
+
+                    item.className =
+                        'px-3 py-3 border-bottom notification-item';
+
+                    if (!Number(notification.leida)) {
+                        item.classList.add('notification-unread');
+                    }
+
+                    const date = formatNotificationDate(
+                        notification.creado_en
+                    );
+
+                    item.innerHTML = `
+                        <div class="d-flex gap-2">
+
+                            <div class="flex-shrink-0">
+                                <i class="bi bi-bell-fill text-primary"></i>
+                            </div>
+
+                            <div class="flex-grow-1">
+
+                                <div class="fw-semibold">
+                                    ${escapeHtml(notification.titulo)}
+                                </div>
+
+                                <div class="small text-secondary mt-1">
+                                    ${escapeHtml(notification.mensaje)}
+                                </div>
+
+                                <div class="small text-muted mt-2">
+                                    ${date}
+                                </div>
+
+                            </div>
+
+                        </div>
+                    `;
+
+                    notificationList.appendChild(item);
+
+                    item.addEventListener('click', async () => {
+
+                        // Si ya está leída, no necesitamos marcarla nuevamente.
+                        // Pero si es una solicitud de cobro, igualmente permitimos
+                        // abrir la página correspondiente.
+                        if (Number(notification.leida)) {
+
+                            if (
+                                notification.tipo === 'solicitud_cobro'
+                                && notification.solicitud_cobro_id
+                            ) {
+                                window.location.href =
+                                    '<?= e(app_url('solicitudes-cobro')) ?>'
+                                    + '?solicitud='
+                                    + encodeURIComponent(notification.solicitud_cobro_id);
+                            }
+
+                            return;
+                        }
+
+                        try {
+
+                            const response = await fetch(
+                                '<?= e(app_url('/api/notificaciones/')) ?>'
+                                + notification.id
+                                + '/leer',
+                                {
+                                    method: 'POST',
+
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/x-www-form-urlencoded'
+                                    },
+
+                                    credentials: 'same-origin',
+
+                                    body: new URLSearchParams({
+                                        _token: '<?= e(csrf_token()) ?>'
+                                    })
+                                }
+                            );
+
+                            const data = await response.json();
+
+                            if (!data.success) {
+
+                                console.error(
+                                    'No se pudo marcar la notificación como leída.',
+                                    data
+                                );
+
+                                return;
+                            }
+
+                            notification.leida = 1;
+                            item.classList.remove('notification-unread');
+                            loadUnreadCount();
+
+                            // Si la notificación corresponde a una solicitud de cobro,
+                            // llevar al administrador a la página de solicitudes.
+                            if (
+                                notification.tipo === 'solicitud_cobro'
+                                && notification.solicitud_cobro_id
+                            ) {
+                                window.location.href =
+                                    '<?= e(app_url('solicitudes-cobro')) ?>'
+                                    + '?solicitud='
+                                    + encodeURIComponent(notification.solicitud_cobro_id);
+                            }
+
+                        } catch (error) {
+
+                            console.error(
+                                'Error al marcar la notificación como leída:',
+                                error
+                            );
+                        }
+                    });
+                });
+
+            } catch (error) {
+
+                console.error(
+                    'Error al cargar notificaciones:',
+                    error
+                );
+
+                notificationList.innerHTML = `
+                    <div class="text-center text-danger py-4">
+                        Error al cargar las notificaciones.
+                    </div>
+                `;
+            }
+        }
+
+
+        /*
+        * Convierte la fecha de la notificación
+        * a un formato más amigable.
+        */
+        function formatNotificationDate(dateString) {
+
+            if (!dateString) {
+                return '';
+            }
+
+            const date = new Date(
+                dateString.replace(' ', 'T')
+            );
+
+            if (Number.isNaN(date.getTime())) {
+                return dateString;
+            }
+
+            return date.toLocaleString('es-PE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+
+        /*
+        * Evita insertar directamente contenido
+        * proveniente de la base de datos como HTML.
+        */
+        function escapeHtml(value) {
+
+            const div = document.createElement('div');
+
+            div.textContent = value ?? '';
+
+            return div.innerHTML;
+        }
+
+
+        /*
+        * Cuando se abre la campana,
+        * cargamos las notificaciones.
+        */
+        const notificationButton =
+            document.getElementById('notificationButton');
+
+        if (notificationButton) {
+
+            notificationButton.addEventListener(
+                'click',
+                loadNotifications
+            );
+        }
+
+
+        /*
+        * Cargar el contador al entrar a cualquier página.
+        */
+        loadUnreadCount();
+
+
+        /*
+        * Actualizar el contador periódicamente.
+        *
+        * Por ahora cada 30 segundos.
+        */
+        setInterval(
+            loadUnreadCount,
+            30000
+        );
+
+    });
+    </script>
 
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

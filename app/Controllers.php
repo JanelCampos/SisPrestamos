@@ -532,4 +532,31 @@ class NotificationController
             ], 500);
         }
     }
+
+    public static function markAsRead(int $notificationId): void
+    {
+        require_auth();
+
+        try {
+
+            $notificationService = new NotificationUserService();
+
+            $marked = $notificationService->markAsRead(
+                $notificationId,
+                (int) Auth::id()
+            );
+
+            json_response([
+                'success' => true,
+                'marked' => $marked,
+            ]);
+
+        } catch (\Throwable $throwable) {
+
+            json_response([
+                'success' => false,
+                'message' => $throwable->getMessage(),
+            ], 500);
+        }
+    }
 }

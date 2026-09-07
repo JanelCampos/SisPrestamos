@@ -604,4 +604,14 @@ class NotificationUserService
     {
         return $this->repository->getUnreadCount($userId);
     }
+
+    public function markAsRead(
+        int $notificationId,
+        int $userId
+    ): bool {
+        return $this->repository->markAsRead(
+            $notificationId,
+            $userId
+        );
+    }
 }

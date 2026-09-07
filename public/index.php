@@ -107,6 +107,15 @@ switch (true) {
     case $path === '/api/prestamos/simular' && $method === 'POST':
         LoanController::simulateApi();
         break;
+    case preg_match(
+        '#^/api/notificaciones/(\d+)/leer$#',
+        $path,
+        $matches
+    ) && $method === 'POST':
+        NotificationController::markAsRead(
+            (int) $matches[1]
+        );
+        break;
     case $path === '/api/notificaciones' && $method === 'GET':
         NotificationController::index();
         break;

@@ -378,6 +378,17 @@ class LoanRepository
                 'La solicitud no existe o ya fue procesada.'
             );
         }
+
+        // Archivar la notificación relacionada
+        $notificationStatement = $connection->prepare(
+            'UPDATE notificaciones_usuario
+            SET archivada = 1
+            WHERE solicitud_cobro_id = :solicitud_cobro_id'
+        );
+
+        $notificationStatement->execute([
+            'solicitud_cobro_id' => $requestId,
+        ]);
     }
 
     public function rejectPaymentRequest(int $requestId, int $approverId): void
@@ -403,6 +414,17 @@ class LoanRepository
                 'La solicitud no existe o ya fue procesada.'
             );
         }
+
+        // Archivar la notificación relacionada
+        $notificationStatement = $connection->prepare(
+            'UPDATE notificaciones_usuario
+            SET archivada = 1
+            WHERE solicitud_cobro_id = :solicitud_cobro_id'
+        );
+
+        $notificationStatement->execute([
+            'solicitud_cobro_id' => $requestId,
+        ]);
     }
 
     public function latestPaymentRequest(int $loanId, int $userId): ?array
@@ -1240,6 +1262,7 @@ class NotificationUserRepository
                 n.leida_en
             FROM notificaciones_usuario n
             WHERE n.usuario_id = :usuario_id
+            AND n.archivada = 0
             ORDER BY n.creado_en DESC
             LIMIT 20'
         );
@@ -1267,5 +1290,28 @@ class NotificationUserRepository
         ]);
 
         return (int) $statement->fetchColumn();
+    }
+
+    public function markAsRead(int $notificationId, int $userId): bool
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'UPDATE notificaciones_usuario
+            SET
+                leida = 1,
+                leida_en = NOW()
+            WHERE id = :id
+            AND usuario_id = :usuario_id
+            AND leida = 0
+            LIMIT 1'
+        );
+
+        $statement->execute([
+            'id' => $notificationId,
+            'usuario_id' => $userId,
+        ]);
+
+        return $statement->rowCount() > 0;
     }
 }
