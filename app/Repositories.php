@@ -1314,6 +1314,27 @@ class NotificationUserRepository
 
         return $statement->rowCount() > 0;
     }
+
+    public function getActiveAdministratorIds(): array
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'SELECT u.id
+            FROM usuarios u
+            INNER JOIN roles r
+                ON r.id = u.rol_id
+            WHERE u.estado = "activo"
+            AND r.nombre = "administrador total"'
+        );
+
+        $statement->execute();
+
+        return array_map(
+            'intval',
+            $statement->fetchAll(PDO::FETCH_COLUMN)
+        );
+    }
 }
 
 class PushSubscriptionRepository

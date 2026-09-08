@@ -235,13 +235,15 @@ class LoanService
 
         try {
 
-            $solicitudCobroId = $this->repository->requestPaymentAuthorization(
-                $loanId,
-                $payload,
-                $userId
-            );
+            $solicitudCobroId =
+                $this->repository->requestPaymentAuthorization(
+                    $loanId,
+                    $payload,
+                    $userId
+                );
 
-            $notificationUserService = new NotificationUserService();
+            $notificationUserService =
+                new NotificationUserService();
 
             $notificationUserService->notifyAdminNewPaymentRequest(
                 $loanId,
@@ -259,6 +261,45 @@ class LoanService
             }
 
             throw $throwable;
+        }
+
+        /*
+        * Enviamos el Push después del COMMIT.
+        * Si Web Push falla, la solicitud de cobro
+        * y la notificación interna no se pierden.
+        */
+        try {
+
+            $administratorIds =
+                $notificationUserService->getActiveAdministratorIds();
+
+            $pushNotificationService =
+                new PushNotificationService();
+
+            foreach ($administratorIds as $administratorId) {
+
+                $pushNotificationService->sendToUser(
+                    (int) $administratorId,
+                    'Nueva solicitud de cobro',
+                    'Se ha recibido una nueva solicitud de cobro por S/ '
+                    . number_format(
+                        (float) $payload['monto_recibido'],
+                        2,
+                        '.',
+                        ''
+                    ),
+                    app_url('solicitudes-cobro')
+                    . '?solicitud='
+                    . $solicitudCobroId
+                );
+            }
+
+        } catch (\Throwable $throwable) {
+
+            error_log(
+                'Error al enviar Push de nueva solicitud de cobro: '
+                . $throwable->getMessage()
+            );
         }
     }
 
@@ -613,6 +654,11 @@ class NotificationUserService
             $notificationId,
             $userId
         );
+    }
+
+    public function getActiveAdministratorIds(): array
+    {
+        return $this->repository->getActiveAdministratorIds();
     }
 }
 
