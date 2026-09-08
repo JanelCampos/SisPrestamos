@@ -16,6 +16,7 @@ use App\DashboardController;
 use App\LoanController;
 use App\ReportController;
 use App\NotificationController;
+use App\PushController;
 
 $path = current_path();
 $method = request_method();
@@ -121,6 +122,12 @@ switch (true) {
         break;
     case $path === '/api/notificaciones/no-leidas' && $method === 'GET':
         NotificationController::unreadCount();
+        break;
+    case $path === '/api/push/suscripcion' && $method === 'POST':
+        PushController::subscribe();
+        break;
+    case $path === '/api/push/prueba' && $method === 'POST':
+        PushController::test();
         break;
     default:
         abort(404, 'La ruta solicitada no existe.');

@@ -373,7 +373,6 @@
                                 <span
                                     id="notificationBadge"
                                     class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none"
-                                    id="notificationBadge"
                                 >
                                     0
                                 </span>
@@ -396,6 +395,26 @@
                             </div>
 
                         </div>
+
+                        <!-- NOTIFICACIONES PUSH -->
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary btn-sm"
+                            id="btnActivarNotificaciones"
+                            title="Activar notificaciones Push"
+                        >
+                            <i class="bi bi-bell"></i>
+                            Activar
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-success btn-sm"
+                            id="btnProbarPush"
+                        >
+                            <i class="bi bi-send"></i>
+                            Probar Push
+                        </button>
 
                         <form method="post" action="<?= e(app_url('logout')) ?>">
                             <?= csrf_field() ?>
@@ -454,6 +473,15 @@
 
 <?php endif; ?>
 
+<?php
+$pushConfig = require __DIR__ . '/../config/push.php';
+?>
+
+<script>
+window.VAPID_PUBLIC_KEY = <?= json_encode(
+    $pushConfig['vapid']['publicKey']
+) ?>;
+</script>
 
 <!-- =====================================================
      JAVASCRIPT DEL MENÚ MÓVIL
@@ -505,6 +533,323 @@
         });
 
     }
+
+    if ('serviceWorker' in navigator) {
+
+        window.addEventListener('load', async function () {
+
+            try {
+
+                const registration =
+                    await navigator.serviceWorker.register(
+                        '<?= app_url('sw.js') ?>'
+                    );
+
+                console.log(
+                    'Service Worker registrado:',
+                    registration.scope
+                );
+
+            } catch (error) {
+
+                console.error(
+                    'Error al registrar el Service Worker:',
+                    error
+                );
+            }
+        });
+    }
+
+    if ('serviceWorker' in navigator) {
+
+        navigator.serviceWorker.addEventListener(
+            'message',
+            function (event) {
+
+                if (!event.data) {
+                    return;
+                }
+
+                if (
+                    event.data.action ===
+                    'redirect-from-notificationclick'
+                ) {
+
+                    window.location.href =
+                        event.data.url;
+                }
+            }
+        );
+    }
+
+    async function activarNotificacionesPush() {
+
+    if (!('serviceWorker' in navigator)) {
+        throw new Error(
+            'Este navegador no soporta Service Worker.'
+        );
+    }
+
+    if (!('PushManager' in window)) {
+        throw new Error(
+            'Este navegador no soporta Web Push.'
+        );
+    }
+
+    if (!('Notification' in window)) {
+        throw new Error(
+            'Este navegador no soporta notificaciones.'
+        );
+    }
+
+    const permission =
+        await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+        throw new Error(
+            'El permiso para las notificaciones fue rechazado.'
+        );
+    }
+
+    const registration =
+        await navigator.serviceWorker.ready;
+
+    let subscription =
+        await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+
+        subscription =
+            await registration.pushManager.subscribe({
+
+                userVisibleOnly: true,
+
+                applicationServerKey:
+                    urlBase64ToUint8Array(
+                        window.VAPID_PUBLIC_KEY
+                    )
+            });
+    }
+
+    const subscriptionJson =
+        subscription.toJSON();
+
+    const formData = new URLSearchParams();
+
+    formData.append(
+        '_token',
+        <?= json_encode(csrf_token()) ?>
+    );
+
+    formData.append(
+        'endpoint',
+        subscriptionJson.endpoint
+    );
+
+    formData.append(
+        'p256dh',
+        subscriptionJson.keys.p256dh
+    );
+
+    formData.append(
+        'auth',
+        subscriptionJson.keys.auth
+    );
+
+    const response = await fetch(
+        '<?= app_url('api/push/suscripcion') ?>',
+        {
+            method: 'POST',
+
+            headers: {
+                'Content-Type':
+                    'application/x-www-form-urlencoded;charset=UTF-8'
+            },
+
+            body: formData.toString()
+        }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+        throw new Error(
+            result.message ||
+            'No se pudo guardar la suscripción Push.'
+        );
+    }
+
+    console.log(
+        'Suscripción Push guardada correctamente.'
+    );
+
+    return subscription;
+}
+
+
+function urlBase64ToUint8Array(base64String) {
+
+    const padding =
+        '='.repeat(
+            (4 - base64String.length % 4) % 4
+        );
+
+    const base64 =
+        (base64String + padding)
+            .replace(/-/g, '+')
+            .replace(/_/g, '/');
+
+    const rawData =
+        window.atob(base64);
+
+    const outputArray =
+        new Uint8Array(rawData.length);
+
+    for (
+        let i = 0;
+        i < rawData.length;
+        ++i
+    ) {
+        outputArray[i] =
+            rawData.charCodeAt(i);
+    }
+
+    return outputArray;
+}
+
+const btnActivarNotificaciones =
+    document.getElementById('btnActivarNotificaciones');
+
+if (btnActivarNotificaciones) {
+
+    btnActivarNotificaciones.addEventListener(
+        'click',
+        async function () {
+
+            btnActivarNotificaciones.disabled = true;
+
+            const textoOriginal =
+                btnActivarNotificaciones.innerHTML;
+
+            btnActivarNotificaciones.innerHTML = `
+                <span
+                    class="spinner-border spinner-border-sm me-1"
+                    role="status"
+                    aria-hidden="true">
+                </span>
+                Activando...
+            `;
+
+            try {
+
+                await activarNotificacionesPush();
+
+                btnActivarNotificaciones.innerHTML = `
+                    <i class="bi bi-bell-fill"></i>
+                    Activadas
+                `;
+
+                btnActivarNotificaciones.classList.remove(
+                    'btn-outline-primary'
+                );
+
+                btnActivarNotificaciones.classList.add(
+                    'btn-success'
+                );
+
+                console.log(
+                    'Notificaciones Push activadas correctamente.'
+                );
+
+            } catch (error) {
+
+                console.error(
+                    'Error al activar las notificaciones:',
+                    error
+                );
+
+                btnActivarNotificaciones.innerHTML =
+                    textoOriginal;
+
+                alert(
+                    error.message ||
+                    'No se pudieron activar las notificaciones.'
+                );
+
+            } finally {
+
+                btnActivarNotificaciones.disabled = false;
+            }
+        }
+    );
+}
+
+const btnProbarPush =
+    document.getElementById('btnProbarPush');
+
+if (btnProbarPush) {
+
+    btnProbarPush.addEventListener(
+        'click',
+        async function () {
+
+            btnProbarPush.disabled = true;
+
+            try {
+
+                const response = await fetch(
+                    '<?= e(app_url('api/push/prueba')) ?>',
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type':
+                                'application/x-www-form-urlencoded;charset=UTF-8'
+                        },
+
+                        credentials: 'same-origin',
+
+                        body: new URLSearchParams({
+                            _token:
+                                '<?= e(csrf_token()) ?>'
+                        })
+                    }
+                );
+
+                const result =
+                    await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(
+                        result.message ||
+                        'No se pudo enviar la notificación Push.'
+                    );
+                }
+
+                console.log(
+                    'Prueba Push enviada correctamente.'
+                );
+
+            } catch (error) {
+
+                console.error(
+                    'Error al probar Push:',
+                    error
+                );
+
+                alert(
+                    error.message ||
+                    'No se pudo enviar la notificación Push.'
+                );
+
+            } finally {
+
+                btnProbarPush.disabled = false;
+            }
+        }
+    );
+}
 
 </script>
 

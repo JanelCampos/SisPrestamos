@@ -3,7 +3,7 @@
         'name' => 'sisprestamos/webapp',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'd9523daea564e87a41b921e33a8155ae861e5e63',
+        'reference' => 'e1e9548c28e5b0f1b9d65fb674b34681401289d5',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -52,6 +52,33 @@
             'reference' => '8259ffb930817e72b1ff1caef5d226501f3dfeb1',
             'type' => 'library',
             'install_path' => __DIR__ . '/../dompdf/php-svg-lib',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'guzzlehttp/guzzle' => array(
+            'pretty_version' => '7.15.5',
+            'version' => '7.15.5.0',
+            'reference' => 'ee80339fd9177ba44c49cdb653ff02a4d1106b9a',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../guzzlehttp/guzzle',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'guzzlehttp/promises' => array(
+            'pretty_version' => '2.5.3',
+            'version' => '2.5.3.0',
+            'reference' => 'cde49999552d185d64715fe9c1f77a2aadd2f9f1',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../guzzlehttp/promises',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'guzzlehttp/psr7' => array(
+            'pretty_version' => '2.13.1',
+            'version' => '2.13.1.0',
+            'reference' => '95e7828100de18b4e269fb1703be530082d5166d',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../guzzlehttp/psr7',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
@@ -104,12 +131,14 @@
             'dev_requirement' => false,
             'provided' => array(
                 0 => '*',
+                1 => '1.0',
             ),
         ),
         'php-http/client-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
                 0 => '*',
+                1 => '1.0',
             ),
         ),
         'php-http/discovery' => array(
@@ -118,6 +147,15 @@
             'reference' => '82fe4c73ef3363caed49ff8dd1539ba06044910d',
             'type' => 'composer-plugin',
             'install_path' => __DIR__ . '/../php-http/discovery',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'php-http/guzzle7-adapter' => array(
+            'pretty_version' => '1.1.0',
+            'version' => '1.1.0.0',
+            'reference' => '03a415fde709c2f25539790fecf4d9a31bc3d0eb',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../php-http/guzzle7-adapter',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
@@ -179,6 +217,7 @@
             'dev_requirement' => false,
             'provided' => array(
                 0 => '*',
+                1 => '1.0',
             ),
         ),
         'psr/http-factory' => array(
@@ -194,6 +233,7 @@
             'dev_requirement' => false,
             'provided' => array(
                 0 => '*',
+                1 => '1.0',
             ),
         ),
         'psr/http-message' => array(
@@ -209,6 +249,7 @@
             'dev_requirement' => false,
             'provided' => array(
                 0 => '*',
+                1 => '1.0',
             ),
         ),
         'psr/log' => array(
@@ -229,6 +270,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'ralouphie/getallheaders' => array(
+            'pretty_version' => '3.0.3',
+            'version' => '3.0.3.0',
+            'reference' => '120b605dfeb996808c31b6477290a714d356e822',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../ralouphie/getallheaders',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'sabberworm/php-css-parser' => array(
             'pretty_version' => 'v9.4.0',
             'version' => '9.4.0.0',
@@ -241,7 +291,7 @@
         'sisprestamos/webapp' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'd9523daea564e87a41b921e33a8155ae861e5e63',
+            'reference' => 'e1e9548c28e5b0f1b9d65fb674b34681401289d5',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -271,6 +321,15 @@
             'reference' => 'f3202fa1b5097b0af062dc978b32ecf63404e31d',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/deprecation-contracts',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'symfony/polyfill-php80' => array(
+            'pretty_version' => 'v1.37.0',
+            'version' => '1.37.0.0',
+            'reference' => 'dfb55726c3a76ea3b6459fcfda1ec2d80a682411',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/polyfill-php80',
             'aliases' => array(),
             'dev_requirement' => false,
         ),

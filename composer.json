@@ -5,7 +5,8 @@
   "require": {
     "php": ">=7.4",
     "dompdf/dompdf": "3.1.6",
-    "minishlink/web-push": "11.0",
+    "minishlink/web-push": "^11.0",
+    "php-http/guzzle7-adapter": "^1.1",
     "phpmailer/phpmailer": "^6.9",
     "phpoffice/phpspreadsheet": "^2.1"
   },

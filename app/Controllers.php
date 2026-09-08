@@ -560,3 +560,84 @@ class NotificationController
         }
     }
 }
+
+class PushController
+{
+    public static function subscribe(): void
+    {
+        require_auth();
+        verify_csrf();
+
+        try {
+            $endpoint = trim($_POST['endpoint'] ?? '');
+            $p256dh = trim($_POST['p256dh'] ?? '');
+            $auth = trim($_POST['auth'] ?? '');
+
+            if (
+                $endpoint === '' ||
+                $p256dh === '' ||
+                $auth === ''
+            ) {
+                throw new \InvalidArgumentException(
+                    'Datos de suscripción Push incompletos.'
+                );
+            }
+
+            $service = new PushSubscriptionService();
+
+            $service->save(
+                (int) Auth::id(),
+                $endpoint,
+                $p256dh,
+                $auth
+            );
+
+            json_response([
+                'success' => true,
+                'message' => 'Suscripción Push guardada correctamente.'
+            ]);
+
+        } catch (\Throwable $throwable) {
+
+            json_response([
+                'success' => false,
+                'message' => $throwable->getMessage()
+            ], 500);
+        }
+    }
+
+    public static function test(): void
+    {
+        require_auth();
+        verify_csrf();
+
+        try {
+            $userId = (int) Auth::id();
+
+            $service = new PushNotificationService();
+
+            $service->sendToUser(
+                $userId,
+                'Prueba de notificación',
+                'Las notificaciones Push de SisPrestamos están funcionando correctamente.',
+                app_url('dashboard')
+            );
+
+            json_response([
+                'success' => true,
+                'message' => 'Notificación Push enviada correctamente.'
+            ]);
+        } catch (\Throwable $throwable) {
+
+            error_log(
+                'Error en prueba Web Push: ' .
+                $throwable->getMessage()
+            );
+
+            json_response([
+                'success' => false,
+                'message' => $throwable->getMessage()
+            ], 500);
+        }
+    }
+}

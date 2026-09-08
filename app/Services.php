@@ -645,4 +645,89 @@ class PushSubscriptionService
             $endpoint
         );
     }
+
+    public function getByUserId(int $userId): array
+    {
+        return $this->repository->getByUserId($userId);
+    }
+
+    public function deleteById(int $id): bool
+    {
+        return $this->repository->deleteById($id);
+    }
+}
+
+class PushNotificationService
+{
+    private PushSubscriptionRepository $subscriptionRepository;
+
+    public function __construct()
+    {
+        $this->subscriptionRepository =
+            new PushSubscriptionRepository();
+    }
+
+    /**
+     * Envía una notificación Push a todos los dispositivos
+     * registrados de un usuario.
+     */
+    public function sendToUser(
+        int $userId,
+        string $title,
+        string $message,
+        ?string $url = null
+    ): void {
+        $subscriptions =
+            $this->subscriptionRepository->getByUserId($userId);
+
+        if (empty($subscriptions)) {
+            return;
+        }
+
+        $config = require __DIR__ . '/../config/push.php';
+
+        $auth = [
+            'VAPID' => [
+                'subject' => $config['vapid']['subject'],
+                'publicKey' => $config['vapid']['publicKey'],
+                'privateKey' => $config['vapid']['privateKey'],
+            ],
+        ];
+
+        $webPush = new \Minishlink\WebPush\WebPush($auth);
+
+        foreach ($subscriptions as $subscription) {
+
+            $payload = json_encode([
+                'title' => $title,
+                'message' => $message,
+                'url' => $url,
+            ], JSON_UNESCAPED_UNICODE);
+
+            $pushSubscription =
+                \Minishlink\WebPush\Subscription::create([
+                    'endpoint' => $subscription['endpoint'],
+                    'publicKey' => $subscription['p256dh'],
+                    'authToken' => $subscription['auth'],
+                ]);
+
+            $webPush->queueNotification(
+                $pushSubscription,
+                $payload
+            );
+        }
+
+        foreach ($webPush->flush() as $report) {
+
+            if (!$report->isSuccess()) {
+
+                // Por ahora solamente dejamos registrado
+                // el error para poder identificarlo.
+                error_log(
+                    'Error Web Push: ' .
+                    $report->getReason()
+                );
+            }
+        }
+    }
 }

@@ -1408,4 +1408,50 @@ class PushSubscriptionRepository
 
         return $statement->rowCount() > 0;
     }
+
+    /**
+     * Obtiene todas las suscripciones Push de un usuario.
+     */
+    public function getByUserId(int $userId): array
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'SELECT
+                id,
+                usuario_id,
+                endpoint,
+                p256dh,
+                auth
+            FROM dispositivos_push
+            WHERE usuario_id = :usuario_id
+            ORDER BY id ASC'
+        );
+
+        $statement->execute([
+            'usuario_id' => $userId,
+        ]);
+
+        return $statement->fetchAll();
+    }
+
+    /**
+     * Elimina una suscripción por su ID.
+     */
+    public function deleteById(int $id): bool
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'DELETE FROM dispositivos_push
+            WHERE id = :id
+            LIMIT 1'
+        );
+
+        $statement->execute([
+            'id' => $id,
+        ]);
+
+        return $statement->rowCount() > 0;
+    }
 }
