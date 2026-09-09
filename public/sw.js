@@ -22,7 +22,8 @@ self.addEventListener('push', function (event) {
         icon: '/icon-192.png',
         badge: '/icon-192.png',
         data: {
-            url: data.url || '/'
+            url: data.url || '/',
+            notificationId: data.notificationId || null
         }
     };
 
@@ -39,8 +40,28 @@ self.addEventListener('notificationclick', function (event) {
 
     event.notification.close();
 
-    const url =
-        event.notification.data?.url || '/';
+    const data =
+        event.notification.data || {};
+
+    const baseUrl =
+        data.url || '/';
+
+    const notificationId =
+        data.notificationId || null;
+
+    let url = baseUrl;
+
+    if (notificationId) {
+
+        const separator =
+            baseUrl.includes('?') ? '&' : '?';
+
+        url =
+            baseUrl
+            + separator
+            + 'notificacion='
+            + encodeURIComponent(notificationId);
+    }
 
     event.waitUntil(
 
@@ -51,21 +72,22 @@ self.addEventListener('notificationclick', function (event) {
 
             for (const client of clientList) {
 
-                if ('postMessage' in client) {
+                if ('focus' in client) {
+
+                    client.focus();
 
                     client.postMessage({
-                        action: 'redirect-from-notificationclick',
+                        action: 'push-notification-click',
                         url: url
                     });
 
-                    return client.focus();
+                    return;
                 }
             }
 
             if (clients.openWindow) {
                 return clients.openWindow(url);
             }
-
         })
     );
 });

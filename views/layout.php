@@ -911,6 +911,89 @@ if (btnProbarPush) {
             }
         }
 
+        async function marcarNotificacionPushComoLeida() {
+
+            const params = new URLSearchParams(
+                window.location.search
+            );
+
+            const notificationId =
+                params.get('notificacion');
+
+            if (!notificationId) {
+                return;
+            }
+
+            try {
+
+                const response = await fetch(
+                    '<?= e(app_url('/api/notificaciones/')) ?>'
+                    + encodeURIComponent(notificationId)
+                    + '/leer',
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type':
+                                'application/x-www-form-urlencoded'
+                        },
+
+                        credentials: 'same-origin',
+
+                        body: new URLSearchParams({
+                            _token: '<?= e(csrf_token()) ?>'
+                        })
+                    }
+                );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok || !data.success) {
+
+                    console.error(
+                        'No se pudo marcar como leída la notificación del Push:',
+                        data
+                    );
+
+                    return;
+                }
+
+                console.log(
+                    'Notificación Push marcada como leída.'
+                );
+
+                // Actualizar inmediatamente el contador.
+                loadUnreadCount();
+
+                /*
+                * Quitamos el parámetro de la URL para que,
+                * si el usuario recarga la página, no volvamos
+                * a procesar la misma notificación.
+                */
+                const cleanUrl =
+                    new URL(window.location.href);
+
+                cleanUrl.searchParams.delete(
+                    'notificacion'
+                );
+
+                window.history.replaceState(
+                    {},
+                    document.title,
+                    cleanUrl.toString()
+                );
+
+            } catch (error) {
+
+                console.error(
+                    'Error al marcar la notificación Push como leída:',
+                    error
+                );
+            }
+        }
+
 
         /*
         * Obtiene las notificaciones del usuario
@@ -1160,12 +1243,12 @@ if (btnProbarPush) {
             );
         }
 
+        marcarNotificacionPushComoLeida();
 
         /*
         * Cargar el contador al entrar a cualquier página.
         */
         loadUnreadCount();
-
 
         /*
         * Actualizar el contador periódicamente.
