@@ -303,6 +303,177 @@ class LoanService
         }
     }
 
+    public function approvePaymentRequest(
+        int $requestId,
+        int $approverId
+    ): void {
+        $connection = Database::connection();
+
+        $connection->beginTransaction();
+
+        try {
+
+            // Obtener el cobrador que realizó la solicitud
+            $statement = $connection->prepare(
+                'SELECT usuario_solicitante_id
+                FROM solicitudes_cobro
+                WHERE id = :id
+                AND estado = "pendiente"
+                LIMIT 1'
+            );
+
+            $statement->execute([
+                'id' => $requestId,
+            ]);
+
+            $request = $statement->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$request) {
+                throw new \RuntimeException(
+                    'La solicitud no existe o ya fue procesada.'
+                );
+            }
+
+            $notificationUserService =
+                new NotificationUserService();
+
+            // Aprobar la solicitud
+            $this->repository->approvePaymentRequest(
+                $requestId,
+                $approverId
+            );
+
+            // Crear notificación para el cobrador
+            $notificationId =
+                $notificationUserService
+                    ->notifyPaymentRequestApproved(
+                        $requestId
+                    );
+
+            $connection->commit();
+
+        } catch (\Throwable $throwable) {
+
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+
+            throw $throwable;
+        }
+
+        /*
+        * El Push se envía después del COMMIT.
+        * Si Push falla, la aprobación no se pierde.
+        */
+        try {
+
+            $pushNotificationService =
+                new PushNotificationService();
+
+            $pushNotificationService->sendToUser(
+                (int) $request['usuario_solicitante_id'],
+                'Solicitud de cobro aprobada',
+                'Tu solicitud de cobro ha sido aprobada.',
+                app_url('solicitudes-cobro')
+                . '?solicitud='
+                . $requestId,
+                $notificationId
+            );
+
+        } catch (\Throwable $throwable) {
+
+            error_log(
+                'Error al enviar Push de solicitud aprobada: '
+                . $throwable->getMessage()
+            );
+        }
+    }
+
+    public function rejectPaymentRequest(
+        int $requestId,
+        int $approverId
+    ): void {
+        $connection = Database::connection();
+
+        $connection->beginTransaction();
+
+        try {
+
+            // Obtener el cobrador que realizó la solicitud
+            $statement = $connection->prepare(
+                'SELECT usuario_solicitante_id
+                FROM solicitudes_cobro
+                WHERE id = :id
+                AND estado = "pendiente"
+                LIMIT 1'
+            );
+
+            $statement->execute([
+                'id' => $requestId,
+            ]);
+
+            $request = $statement->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$request) {
+                throw new \RuntimeException(
+                    'La solicitud no existe o ya fue procesada.'
+                );
+            }
+
+            $notificationUserService =
+                new NotificationUserService();
+
+            // Rechazar la solicitud
+            $this->repository->rejectPaymentRequest(
+                $requestId,
+                $approverId
+            );
+
+            // Crear notificación para el cobrador
+            $notificationId =
+                $notificationUserService
+                    ->notifyPaymentRequestRejected(
+                        $requestId
+                    );
+
+            $connection->commit();
+
+        } catch (\Throwable $throwable) {
+
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+
+            throw $throwable;
+        }
+
+        /*
+        * El Push se envía después del COMMIT.
+        */
+        try {
+
+            $pushNotificationService =
+                new PushNotificationService();
+
+            $pushNotificationService->sendToUser(
+                (int) $request['usuario_solicitante_id'],
+                'Solicitud de cobro rechazada',
+                'Tu solicitud de cobro ha sido rechazada.',
+                app_url('solicitudes-cobro')
+                . '?solicitud='
+                . $requestId,
+                $notificationId
+            );
+
+        } catch (\Throwable $throwable) {
+
+            error_log(
+                'Error al enviar Push de solicitud rechazada: '
+                . $throwable->getMessage()
+            );
+        }
+    }
+
     public function exportReport(string $type, array $filters = []): array
     {
         $rows = $type === 'cobros'
@@ -660,6 +831,22 @@ class NotificationUserService
     {
         return $this->repository->getActiveAdministratorIds();
     }
+
+    public function notifyPaymentRequestApproved(
+        int $solicitudCobroId
+    ): int {
+        return $this->repository->notifyPaymentRequestApproved(
+            $solicitudCobroId
+        );
+    }
+
+    public function notifyPaymentRequestRejected(
+        int $solicitudCobroId
+    ): int {
+        return $this->repository->notifyPaymentRequestRejected(
+            $solicitudCobroId
+        );
+    }
 }
 
 class PushSubscriptionService
@@ -721,7 +908,8 @@ class PushNotificationService
         int $userId,
         string $title,
         string $message,
-        ?string $url = null
+        ?string $url = null,
+        ?int $notificationId = null
     ): void {
         $subscriptions =
             $this->subscriptionRepository->getByUserId($userId);
@@ -748,6 +936,7 @@ class PushNotificationService
                 'title' => $title,
                 'message' => $message,
                 'url' => $url,
+                'notificationId' => $notificationId,
             ], JSON_UNESCAPED_UNICODE);
 
             $pushSubscription =

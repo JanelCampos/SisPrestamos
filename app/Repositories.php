@@ -1245,6 +1245,125 @@ class NotificationUserRepository
         return $count;
     }
 
+    public function notifyPaymentRequestApproved(
+        int $solicitudCobroId
+    ): int {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'SELECT 
+                sc.usuario_solicitante_id,
+                sc.prestamo_id
+            FROM solicitudes_cobro sc
+            WHERE sc.id = :id
+            LIMIT 1'
+        );
+
+        $statement->execute([
+            'id' => $solicitudCobroId,
+        ]);
+
+        $request = $statement->fetch(PDO::FETCH_ASSOC);
+
+        if (!$request) {
+            throw new \RuntimeException(
+                'No se encontró la solicitud de cobro.'
+            );
+        }
+
+        $notificationStatement = $connection->prepare(
+            'INSERT INTO notificaciones_usuario
+            (
+                usuario_id,
+                tipo,
+                titulo,
+                mensaje,
+                prestamo_id,
+                solicitud_cobro_id
+            )
+            VALUES
+            (
+                :usuario_id,
+                :tipo,
+                :titulo,
+                :mensaje,
+                :prestamo_id,
+                :solicitud_cobro_id
+            )'
+        );
+
+        $notificationStatement->execute([
+            'usuario_id' => (int) $request['usuario_solicitante_id'],
+            'tipo' => 'solicitud_cobro_aprobada',
+            'titulo' => 'Solicitud de cobro aprobada',
+            'mensaje' => 'Tu solicitud de cobro ha sido aprobada.',
+            'prestamo_id' => (int) $request['prestamo_id'],
+            'solicitud_cobro_id' => $solicitudCobroId,
+        ]);
+
+        return (int) $connection->lastInsertId();
+    }
+
+
+    public function notifyPaymentRequestRejected(
+        int $solicitudCobroId
+    ): int {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'SELECT 
+                sc.usuario_solicitante_id,
+                sc.prestamo_id
+            FROM solicitudes_cobro sc
+            WHERE sc.id = :id
+            LIMIT 1'
+        );
+
+        $statement->execute([
+            'id' => $solicitudCobroId,
+        ]);
+
+        $request = $statement->fetch(PDO::FETCH_ASSOC);
+
+        if (!$request) {
+            throw new \RuntimeException(
+                'No se encontró la solicitud de cobro.'
+            );
+        }
+
+        $notificationStatement = $connection->prepare(
+            'INSERT INTO notificaciones_usuario
+            (
+                usuario_id,
+                tipo,
+                titulo,
+                mensaje,
+                prestamo_id,
+                solicitud_cobro_id
+            )
+            VALUES
+            (
+                :usuario_id,
+                :tipo,
+                :titulo,
+                :mensaje,
+                :prestamo_id,
+                :solicitud_cobro_id
+            )'
+        );
+
+        $notificationStatement->execute([
+            'usuario_id' => (int) $request['usuario_solicitante_id'],
+            'tipo' => 'solicitud_cobro_rechazada',
+            'titulo' => 'Solicitud de cobro rechazada',
+            'mensaje' => 'Tu solicitud de cobro ha sido rechazada.',
+            'prestamo_id' => (int) $request['prestamo_id'],
+            'solicitud_cobro_id' => $solicitudCobroId,
+        ]);
+
+        return (int) $connection->lastInsertId();
+    }
+
     public function getForUser(int $userId): array
     {
         $connection = Database::connection();

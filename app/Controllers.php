@@ -434,9 +434,9 @@ class AdminController
         verify_csrf();
 
         try {
-            $loanRepository = new LoanRepository();
+            $loanService = new LoanService();
 
-            $loanRepository->approvePaymentRequest(
+            $loanService->approvePaymentRequest(
                 $id,
                 (int) Auth::id()
             );
@@ -455,9 +455,9 @@ class AdminController
         verify_csrf();
 
         try {
-            $loanRepository = new LoanRepository();
+            $loanService = new LoanService();
 
-            $loanRepository->rejectPaymentRequest(
+            $loanService->rejectPaymentRequest(
                 $id,
                 (int) Auth::id()
             );
