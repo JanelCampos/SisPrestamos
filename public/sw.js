@@ -8,6 +8,10 @@ self.addEventListener('push', function (event) {
 
     try {
         data = event.data.json();
+        console.log(
+            'Payload Push recibido:',
+            data
+        );
     } catch (error) {
         data = {
             title: 'SisPrestamos',

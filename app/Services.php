@@ -937,6 +937,11 @@ class PushNotificationService
 
         foreach ($subscriptions as $subscription) {
 
+            error_log(
+                'Web Push notificationId: '
+                . var_export($notificationId, true)
+            );
+
             $payload = json_encode([
                 'title' => $title,
                 'message' => $message,
