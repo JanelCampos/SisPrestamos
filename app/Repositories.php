@@ -1163,22 +1163,24 @@ class NotificationUserRepository
         int $solicitudCobroId,
         int $usuarioSolicitanteId,
         float $monto
-    ): int {
+    ): array {
         $connection = Database::connection();
 
         // Obtener usuario que realizó la solicitud
         $userStatement = $connection->prepare(
             'SELECT usuario
-             FROM usuarios
-             WHERE id = :id
-             LIMIT 1'
+            FROM usuarios
+            WHERE id = :id
+            LIMIT 1'
         );
 
         $userStatement->execute([
             'id' => $usuarioSolicitanteId,
         ]);
 
-        $solicitante = $userStatement->fetch(PDO::FETCH_ASSOC);
+        $solicitante = $userStatement->fetch(
+            \PDO::FETCH_ASSOC
+        );
 
         if (!$solicitante) {
             throw new \RuntimeException(
@@ -1189,43 +1191,46 @@ class NotificationUserRepository
         // Buscar únicamente al administrador total
         $adminStatement = $connection->query(
             'SELECT u.id
-             FROM usuarios u
-             INNER JOIN roles r ON r.id = u.rol_id
-             WHERE r.nombre = "administrador total"
-             AND u.estado = "activo"'
+            FROM usuarios u
+            INNER JOIN roles r
+                ON r.id = u.rol_id
+            WHERE r.nombre = "administrador total"
+            AND u.estado = "activo"'
         );
 
-        $admins = $adminStatement->fetchAll(PDO::FETCH_COLUMN);
+        $admins = $adminStatement->fetchAll(
+            \PDO::FETCH_COLUMN
+        );
 
         if (!$admins) {
-            return 0;
+            return [];
         }
 
-        // Preparar inserción de notificación
         $notificationStatement = $connection->prepare(
             'INSERT INTO notificaciones_usuario
-             (
-                 usuario_id,
-                 tipo,
-                 titulo,
-                 mensaje,
-                 prestamo_id,
-                 solicitud_cobro_id
-             )
-             VALUES
-             (
-                 :usuario_id,
-                 :tipo,
-                 :titulo,
-                 :mensaje,
-                 :prestamo_id,
-                 :solicitud_cobro_id
-             )'
+            (
+                usuario_id,
+                tipo,
+                titulo,
+                mensaje,
+                prestamo_id,
+                solicitud_cobro_id
+            )
+            VALUES
+            (
+                :usuario_id,
+                :tipo,
+                :titulo,
+                :mensaje,
+                :prestamo_id,
+                :solicitud_cobro_id
+            )'
         );
 
-        $count = 0;
+        $notificationIds = [];
 
         foreach ($admins as $adminId) {
+
             $notificationStatement->execute([
                 'usuario_id' => (int) $adminId,
                 'tipo' => 'solicitud_cobro',
@@ -1239,10 +1244,11 @@ class NotificationUserRepository
                 'solicitud_cobro_id' => $solicitudCobroId,
             ]);
 
-            $count++;
+            $notificationIds[(int) $adminId] =
+                (int) $connection->lastInsertId();
         }
 
-        return $count;
+        return $notificationIds;
     }
 
     public function notifyPaymentRequestApproved(

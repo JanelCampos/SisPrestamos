@@ -245,6 +245,7 @@ class LoanService
             $notificationUserService =
                 new NotificationUserService();
 
+            $adminNotificationIds =
             $notificationUserService->notifyAdminNewPaymentRequest(
                 $loanId,
                 $solicitudCobroId,
@@ -278,6 +279,9 @@ class LoanService
 
             foreach ($administratorIds as $administratorId) {
 
+                $notificationId =
+                    $adminNotificationIds[(int) $administratorId] ?? null;
+
                 $pushNotificationService->sendToUser(
                     (int) $administratorId,
                     'Nueva solicitud de cobro',
@@ -290,7 +294,8 @@ class LoanService
                     ),
                     app_url('solicitudes-cobro')
                     . '?solicitud='
-                    . $solicitudCobroId
+                    . $solicitudCobroId,
+                    $notificationId
                 );
             }
 
@@ -798,7 +803,7 @@ class NotificationUserService
         int $solicitudCobroId,
         int $usuarioSolicitanteId,
         float $monto
-    ): int {
+    ): array {
         return $this->repository->notifyAdminNewPaymentRequest(
             $prestamoId,
             $solicitudCobroId,
