@@ -540,10 +540,18 @@ window.VAPID_PUBLIC_KEY = <?= json_encode(
 
             try {
 
+                <?php
+                $swVersion = filemtime(
+                    __DIR__ . '/sw.js'
+                );
+                ?>  
+
                 const registration =
                     await navigator.serviceWorker.register(
-                        '<?= app_url('sw.js') ?>'
+                        '<?= app_url('sw.js').$swVersion ?>'
                     );
+
+                await registration.update();
 
                 console.log(
                     'Service Worker registrado:',
