@@ -862,7 +862,9 @@ if (btnProbarPush) {
 </script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener(
+        'DOMContentLoaded',
+        async () => {
 
         const notificationBadge = document.getElementById('notificationBadge');
         const notificationList = document.getElementById('notificationList');
@@ -870,6 +872,30 @@ if (btnProbarPush) {
         if (!notificationBadge || !notificationList) {
             return;
         }
+
+        navigator.serviceWorker.addEventListener(
+            'message',
+            function (event) {
+
+                if (!event.data) {
+                    return;
+                }
+
+                if (
+                    event.data.action ===
+                    'push-notification-click'
+                ) {
+
+                    console.log(
+                        'Click Push recibido desde Service Worker:',
+                        event.data.url
+                    );
+
+                    window.location.href =
+                        event.data.url;
+                }
+            }
+        );
 
         /*
         * Obtiene la cantidad de notificaciones no leídas
@@ -1251,7 +1277,7 @@ if (btnProbarPush) {
             );
         }
 
-        marcarNotificacionPushComoLeida();
+        await marcarNotificacionPushComoLeida();
 
         /*
         * Cargar el contador al entrar a cualquier página.
