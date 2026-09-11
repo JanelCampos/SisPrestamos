@@ -3,7 +3,7 @@
  * Versión de prueba para Web Push
  */
 
-console.log('🔥 SW NUEVO CARGADOo');
+console.log('🔥 SW NUEVO CARGADOoo');
 
 
 /*

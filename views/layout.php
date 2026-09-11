@@ -548,7 +548,7 @@ window.VAPID_PUBLIC_KEY = <?= json_encode(
 
                 const registration =
                     await navigator.serviceWorker.register(
-                        '<?= app_url('sw.js').$swVersion ?>'
+                        '<?= app_url('sw.js?v=' . $swVersion) ?>'
                     );
 
                 await registration.update();
