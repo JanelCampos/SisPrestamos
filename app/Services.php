@@ -320,12 +320,14 @@ class LoanService
 
             // Obtener el cobrador que realizó la solicitud
             $statement = $connection->prepare(
-                'SELECT usuario_solicitante_id
-                FROM solicitudes_cobro
-                WHERE id = :id
-                AND estado = "pendiente"
-                LIMIT 1'
-            );
+            'SELECT
+                usuario_solicitante_id,
+                prestamo_id
+            FROM solicitudes_cobro
+            WHERE id = :id
+            AND estado = "pendiente"
+            LIMIT 1'
+        );
 
             $statement->execute([
                 'id' => $requestId,
@@ -379,9 +381,9 @@ class LoanService
                 (int) $request['usuario_solicitante_id'],
                 'Solicitud de cobro aprobada',
                 'Tu solicitud de cobro ha sido aprobada.',
-                app_url('solicitudes-cobro')
-                . '?solicitud='
-                . $requestId,
+                app_url(
+                    'prestamos/ver/' . (int) $request['prestamo_id']
+                ),
                 $notificationId
             );
 
@@ -406,7 +408,9 @@ class LoanService
 
             // Obtener el cobrador que realizó la solicitud
             $statement = $connection->prepare(
-                'SELECT usuario_solicitante_id
+                'SELECT
+                    usuario_solicitante_id,
+                    prestamo_id
                 FROM solicitudes_cobro
                 WHERE id = :id
                 AND estado = "pendiente"
@@ -464,9 +468,9 @@ class LoanService
                 (int) $request['usuario_solicitante_id'],
                 'Solicitud de cobro rechazada',
                 'Tu solicitud de cobro ha sido rechazada.',
-                app_url('solicitudes-cobro')
-                . '?solicitud='
-                . $requestId,
+                app_url(
+                    'prestamos/ver/' . (int) $request['prestamo_id']
+                ),
                 $notificationId
             );
 
