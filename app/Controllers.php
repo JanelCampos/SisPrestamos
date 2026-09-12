@@ -605,39 +605,4 @@ class PushController
             ], 500);
         }
     }
-
-    public static function test(): void
-    {
-        require_auth();
-        verify_csrf();
-
-        try {
-            $userId = (int) Auth::id();
-
-            $service = new PushNotificationService();
-
-            $service->sendToUser(
-                $userId,
-                'Prueba de notificación',
-                'Las notificaciones Push de SisPrestamos están funcionando correctamente.',
-                app_url('dashboard')
-            );
-
-            json_response([
-                'success' => true,
-                'message' => 'Notificación Push enviada correctamente.'
-            ]);
-        } catch (\Throwable $throwable) {
-
-            error_log(
-                'Error en prueba Web Push: ' .
-                $throwable->getMessage()
-            );
-
-            json_response([
-                'success' => false,
-                'message' => $throwable->getMessage()
-            ], 500);
-        }
-    }
 }

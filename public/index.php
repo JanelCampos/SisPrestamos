@@ -126,9 +126,6 @@ switch (true) {
     case $path === '/api/push/suscripcion' && $method === 'POST':
         PushController::subscribe();
         break;
-    case $path === '/api/push/prueba' && $method === 'POST':
-        PushController::test();
-        break;
     default:
         abort(404, 'La ruta solicitada no existe.');
 }

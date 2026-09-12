@@ -407,15 +407,6 @@
                             Activar
                         </button>
 
-                        <button
-                            type="button"
-                            class="btn btn-outline-success btn-sm"
-                            id="btnProbarPush"
-                        >
-                            <i class="bi bi-send"></i>
-                            Probar Push
-                        </button>
-
                         <form method="post" action="<?= e(app_url('logout')) ?>">
                             <?= csrf_field() ?>
 
@@ -552,12 +543,6 @@ window.VAPID_PUBLIC_KEY = <?= json_encode(
                     );
 
                 await registration.update();
-
-                console.log(
-                    'Service Worker registrado:',
-                    registration.scope
-                );
-
             } catch (error) {
 
                 console.error(
@@ -687,10 +672,6 @@ window.VAPID_PUBLIC_KEY = <?= json_encode(
         );
     }
 
-    console.log(
-        'Suscripción Push guardada correctamente.'
-    );
-
     return subscription;
 }
 
@@ -765,10 +746,6 @@ if (btnActivarNotificaciones) {
                     'btn-success'
                 );
 
-                console.log(
-                    'Notificaciones Push activadas correctamente.'
-                );
-
             } catch (error) {
 
                 console.error(
@@ -787,73 +764,6 @@ if (btnActivarNotificaciones) {
             } finally {
 
                 btnActivarNotificaciones.disabled = false;
-            }
-        }
-    );
-}
-
-const btnProbarPush =
-    document.getElementById('btnProbarPush');
-
-if (btnProbarPush) {
-
-    btnProbarPush.addEventListener(
-        'click',
-        async function () {
-
-            btnProbarPush.disabled = true;
-
-            try {
-
-                const response = await fetch(
-                    '<?= e(app_url('api/push/prueba')) ?>',
-                    {
-                        method: 'POST',
-
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type':
-                                'application/x-www-form-urlencoded;charset=UTF-8'
-                        },
-
-                        credentials: 'same-origin',
-
-                        body: new URLSearchParams({
-                            _token:
-                                '<?= e(csrf_token()) ?>'
-                        })
-                    }
-                );
-
-                const result =
-                    await response.json();
-
-                if (!response.ok || !result.success) {
-                    throw new Error(
-                        result.message ||
-                        'No se pudo enviar la notificación Push.'
-                    );
-                }
-
-                console.log(
-                    'Prueba Push enviada correctamente.'
-                );
-
-            } catch (error) {
-
-                console.error(
-                    'Error al probar Push:',
-                    error
-                );
-
-                alert(
-                    error.message ||
-                    'No se pudo enviar la notificación Push.'
-                );
-
-            } finally {
-
-                btnProbarPush.disabled = false;
             }
         }
     );
@@ -885,12 +795,6 @@ if (btnProbarPush) {
                     event.data.action ===
                     'push-notification-click'
                 ) {
-
-                    console.log(
-                        'Click Push recibido desde Service Worker:',
-                        event.data.url
-                    );
-
                     window.location.href =
                         event.data.url;
                 }
@@ -993,10 +897,6 @@ if (btnProbarPush) {
 
                     return;
                 }
-
-                console.log(
-                    'Notificación Push marcada como leída.'
-                );
 
                 // Actualizar inmediatamente el contador.
                 loadUnreadCount();

@@ -1,19 +1,8 @@
 /*
- * SisPrestamos - Service Worker
- * Versión de prueba para Web Push
- */
-
-console.log('🔥 SW NUEVO CARGADOoo');
-
-
-/*
  * Activa inmediatamente la nueva versión
  * del Service Worker.
  */
 self.addEventListener('install', function (event) {
-
-    console.log('🔥 SW instalando nueva versión...');
-
     self.skipWaiting();
 });
 
@@ -27,10 +16,6 @@ self.addEventListener('activate', function (event) {
     event.waitUntil(
 
         clients.claim().then(function () {
-
-            console.log(
-                '🔥 SW nueva versión activa y controlando clientes.'
-            );
 
         })
 
@@ -53,22 +38,12 @@ self.addEventListener('push', function (event) {
 
         data = event.data.json();
 
-        console.log(
-            '🔥 Payload Push recibido:',
-            data
-        );
-
     } catch (error) {
 
         data = {
             title: 'SisPrestamos',
             message: event.data.text()
         };
-
-        console.log(
-            '🔥 Payload Push recibido como texto:',
-            data
-        );
     }
 
     const title =
@@ -95,11 +70,6 @@ self.addEventListener('push', function (event) {
 
         }
     };
-
-    console.log(
-        '🔥 Datos guardados en la notificación:',
-        options.data
-    );
 
     event.waitUntil(
 
@@ -128,16 +98,6 @@ self.addEventListener('notificationclick', function (event) {
     const notificationId =
         data.notificationId || null;
 
-    console.log(
-        '🔥 CLICK PUSH - data:',
-        data
-    );
-
-    console.log(
-        '🔥 CLICK PUSH - notificationId:',
-        notificationId
-    );
-
     let url =
         baseUrl;
 
@@ -160,11 +120,6 @@ self.addEventListener('notificationclick', function (event) {
                 notificationId
             );
     }
-
-    console.log(
-        '🔥 CLICK PUSH - URL FINAL:',
-        url
-    );
 
     event.waitUntil(
 
