@@ -49,11 +49,6 @@
         <div class="card card-soft">
             <div class="card-body">
                 <h2 class="h5 mb-3">Notificaciones pendientes</h2>
-                <form action="../cron/notificaciones.php" method="POST">
-                    <button type="submit" class="btn btn-primary">
-                        Generar
-                    </button>
-                </form>
                 <?php if ($pendingNotifications): ?>
                     <div class="small d-grid gap-3">
                         <?php foreach ($pendingNotifications as $row): ?>
