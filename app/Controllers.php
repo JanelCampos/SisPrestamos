@@ -416,6 +416,346 @@ class AdminController
         ]);
     }
 
+    public static function create(): void
+    {
+        require_auth(['administrador total']);
+
+        $userRepository = new UserRepository();
+
+        render('user_form', [
+            'title' => 'Nuevo usuario',
+            'usuario' => null,
+            'roles' => $userRepository->roles(),
+            'action' => app_url('usuarios/crear'),
+        ]);
+    }
+
+    public static function store(): void
+    {
+        require_auth(['administrador total']);
+        verify_csrf();
+
+        $nombreCompleto = trim(input('nombre_completo'));
+        $usuario = trim(input('usuario'));
+        $email = trim(input('email'));
+        $telefono = trim(input('telefono'));
+        $password = $_POST['password'] ?? '';
+        $passwordConfirmacion = $_POST['password_confirmacion'] ?? '';
+        $rolId = (int) input('rol_id', 0);
+        $estado = input('estado', 'activo');
+
+        $payload = [
+            'nombre_completo' => $nombreCompleto,
+            'usuario' => $usuario,
+            'email' => $email,
+            'telefono' => $telefono,
+            'rol_id' => $rolId,
+            'estado' => $estado,
+        ];
+
+        with_old_input($payload);
+
+        if ($nombreCompleto === '') {
+            flash('danger', 'El nombre completo es obligatorio.');
+            redirect_back('usuarios/crear');
+        }
+
+        if ($usuario === '') {
+            flash('danger', 'El usuario es obligatorio.');
+            redirect_back('usuarios/crear');
+        }
+
+        if (
+            $email === ''
+            || !filter_var($email, FILTER_VALIDATE_EMAIL)
+        ) {
+            flash('danger', 'Ingresa un correo electrónico válido.');
+            redirect_back('usuarios/crear');
+        }
+
+        if ($password === '') {
+            flash('danger', 'La contraseña es obligatoria.');
+            redirect_back('usuarios/crear');
+        }
+
+        if (strlen($password) < 6) {
+            flash('danger', 'La contraseña debe tener al menos 6 caracteres.');
+            redirect_back('usuarios/crear');
+        }
+
+        if ($password !== $passwordConfirmacion) {
+            flash('danger', 'Las contraseñas no coinciden.');
+            redirect_back('usuarios/crear');
+        }
+
+        if ($rolId <= 0) {
+            flash('danger', 'Selecciona un rol.');
+            redirect_back('usuarios/crear');
+        }
+
+        if (
+            !in_array(
+                $estado,
+                ['activo', 'inactivo', 'bloqueado'],
+                true
+            )
+        ) {
+            flash('danger', 'El estado seleccionado no es válido.');
+            redirect_back('usuarios/crear');
+        }
+
+        try {
+            $userRepository = new UserRepository();
+
+            $userRepository->create([
+                'rol_id' => $rolId,
+                'nombre_completo' => $nombreCompleto,
+                'usuario' => $usuario,
+                'email' => $email,
+                'password_hash' => password_hash(
+                    $password,
+                    PASSWORD_DEFAULT
+                ),
+                'telefono' => $telefono !== '' ? $telefono : null,
+                'estado' => $estado,
+            ]);
+
+            clear_old_input();
+
+            flash('success', 'Usuario creado correctamente.');
+            redirect_to('usuarios');
+
+        } catch (\PDOException $exception) {
+
+            if (
+                isset($exception->errorInfo[1])
+                && (int) $exception->errorInfo[1] === 1062
+            ) {
+                flash(
+                    'danger',
+                    'El usuario o correo electrónico ya está registrado.'
+                );
+            } else {
+                flash(
+                    'danger',
+                    'No se pudo crear el usuario.'
+                );
+            }
+
+            redirect_back('usuarios/crear');
+        }
+    }
+
+    public static function edit(int $id): void
+    {
+        require_auth(['administrador total']);
+
+        $userRepository = new UserRepository();
+
+        $user = $userRepository->find($id);
+
+        if (!$user) {
+            abort(404, 'Usuario no encontrado.');
+        }
+
+        render('user_form', [
+            'title' => 'Editar usuario',
+            'usuario' => $user,
+            'roles' => $userRepository->roles(),
+            'action' => app_url('usuarios/editar/' . $id),
+        ]);
+    }
+
+    public static function update(int $id): void
+    {
+        require_auth(['administrador total']);
+        verify_csrf();
+
+        $userRepository = new UserRepository();
+
+        $usuarioActual = $userRepository->find($id);
+
+        if (!$usuarioActual) {
+            abort(404, 'Usuario no encontrado.');
+        }
+
+        $nombreCompleto = trim(input('nombre_completo'));
+        $usuario = trim(input('usuario'));
+        $email = trim(input('email'));
+        $telefono = trim(input('telefono'));
+        $password = $_POST['password'] ?? '';
+        $passwordConfirmacion = $_POST['password_confirmacion'] ?? '';
+        $rolId = (int) input('rol_id', 0);
+        $estado = input('estado', 'activo');
+
+        $payload = [
+            'nombre_completo' => $nombreCompleto,
+            'usuario' => $usuario,
+            'email' => $email,
+            'telefono' => $telefono,
+            'rol_id' => $rolId,
+            'estado' => $estado,
+        ];
+
+        with_old_input($payload);
+
+        if ($nombreCompleto === '') {
+            flash('danger', 'El nombre completo es obligatorio.');
+            redirect_back('usuarios/editar/' . $id);
+        }
+
+        if ($usuario === '') {
+            flash('danger', 'El usuario es obligatorio.');
+            redirect_back('usuarios/editar/' . $id);
+        }
+
+        if (
+            $email === ''
+            || !filter_var($email, FILTER_VALIDATE_EMAIL)
+        ) {
+            flash('danger', 'Ingresa un correo electrónico válido.');
+            redirect_back('usuarios/editar/' . $id);
+        }
+
+        if ($rolId <= 0) {
+            flash('danger', 'Selecciona un rol.');
+            redirect_back('usuarios/editar/' . $id);
+        }
+
+        if (
+            !in_array(
+                $estado,
+                ['activo', 'inactivo', 'bloqueado'],
+                true
+            )
+        ) {
+            flash('danger', 'El estado seleccionado no es válido.');
+            redirect_back('usuarios/editar/' . $id);
+        }
+
+        // La contraseña solamente se valida si se quiere cambiar.
+        if ($password !== '') {
+
+            if (strlen($password) < 6) {
+                flash(
+                    'danger',
+                    'La contraseña debe tener al menos 6 caracteres.'
+                );
+
+                redirect_back('usuarios/editar/' . $id);
+            }
+
+            if ($password !== $passwordConfirmacion) {
+                flash(
+                    'danger',
+                    'Las contraseñas no coinciden.'
+                );
+
+                redirect_back('usuarios/editar/' . $id);
+            }
+        }
+
+        try {
+
+            $userRepository->update($id, [
+                'rol_id' => $rolId,
+                'nombre_completo' => $nombreCompleto,
+                'usuario' => $usuario,
+                'email' => $email,
+                'telefono' => $telefono !== '' ? $telefono : null,
+                'estado' => $estado,
+            ]);
+
+            // Solo cambiar la contraseña si se escribió una nueva.
+            if ($password !== '') {
+                $userRepository->updatePassword(
+                    $id,
+                    password_hash($password, PASSWORD_DEFAULT)
+                );
+            }
+
+            clear_old_input();
+
+            flash('success', 'Usuario actualizado correctamente.');
+            redirect_to('usuarios');
+
+        } catch (\PDOException $exception) {
+
+            if (
+                isset($exception->errorInfo[1])
+                && (int) $exception->errorInfo[1] === 1062
+            ) {
+                flash(
+                    'danger',
+                    'El usuario o correo electrónico ya está registrado.'
+                );
+            } else {
+                flash(
+                    'danger',
+                    'No se pudo actualizar el usuario.'
+                );
+            }
+
+            redirect_back('usuarios/editar/' . $id);
+        }
+    }
+
+    public static function deactivate(int $id): void
+    {
+        require_auth(['administrador total']);
+        verify_csrf();
+
+        $userRepository = new UserRepository();
+
+        $usuario = $userRepository->find($id);
+
+        if (!$usuario) {
+            abort(404, 'Usuario no encontrado.');
+        }
+
+        // Evitar que el administrador desactive su propia cuenta.
+        if ($id === Auth::id()) {
+            flash(
+                'danger',
+                'No puedes desactivar tu propia cuenta.'
+            );
+
+            redirect_to('usuarios');
+        }
+
+        $userRepository->updateStatus($id, 'inactivo');
+
+        flash(
+            'success',
+            'Usuario desactivado correctamente.'
+        );
+
+        redirect_to('usuarios');
+    }
+
+    public static function activate(int $id): void
+    {
+        require_auth(['administrador total']);
+        verify_csrf();
+
+        $userRepository = new UserRepository();
+
+        $usuario = $userRepository->find($id);
+
+        if (!$usuario) {
+            abort(404, 'Usuario no encontrado.');
+        }
+
+        $userRepository->updateStatus($id, 'activo');
+
+        flash(
+            'success',
+            'Usuario activado correctamente.'
+        );
+
+        redirect_to('usuarios');
+    }
+
     public static function paymentRequests(): void
     {
         require_auth(['administrador total']);

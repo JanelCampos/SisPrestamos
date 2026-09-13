@@ -1018,9 +1018,134 @@ class UserRepository
         )->fetchAll();
     }
 
+    public function updateStatus(int $id, string $estado): void
+    {
+        $statement = Database::connection()->prepare(
+            'UPDATE usuarios
+            SET estado = :estado,
+                actualizado_en = NOW()
+            WHERE id = :id
+            LIMIT 1'
+        );
+
+        $statement->execute([
+            'id' => $id,
+            'estado' => $estado,
+        ]);
+    }
+
     public function roles(): array
     {
         return Database::connection()->query('SELECT * FROM roles ORDER BY id ASC')->fetchAll();
+    }
+
+    public function create(array $data): int
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'INSERT INTO usuarios
+            (
+                rol_id,
+                nombre_completo,
+                usuario,
+                email,
+                password_hash,
+                telefono,
+                estado
+            )
+            VALUES
+            (
+                :rol_id,
+                :nombre_completo,
+                :usuario,
+                :email,
+                :password_hash,
+                :telefono,
+                :estado
+            )'
+        );
+
+        $statement->execute([
+            'rol_id' => $data['rol_id'],
+            'nombre_completo' => $data['nombre_completo'],
+            'usuario' => $data['usuario'],
+            'email' => $data['email'],
+            'password_hash' => $data['password_hash'],
+            'telefono' => $data['telefono'],
+            'estado' => $data['estado'],
+        ]);
+
+        return (int) $connection->lastInsertId();
+    }
+
+    public function find(int $id): ?array
+    {
+        $statement = Database::connection()->prepare(
+            'SELECT u.*, r.nombre AS role_name
+            FROM usuarios u
+            INNER JOIN roles r ON r.id = u.rol_id
+            WHERE u.id = :id
+            LIMIT 1'
+        );
+
+        $statement->execute([
+            'id' => $id,
+        ]);
+
+        $user = $statement->fetch();
+
+        return $user ?: null;
+    }
+
+    public function update(int $id, array $data): void
+    {
+        $connection = Database::connection();
+
+        $statement = $connection->prepare(
+            'UPDATE usuarios
+            SET
+                rol_id = :rol_id,
+                nombre_completo = :nombre_completo,
+                usuario = :usuario,
+                email = :email,
+                telefono = :telefono,
+                estado = :estado,
+                actualizado_en = NOW()
+            WHERE id = :id'
+        );
+
+        $statement->execute([
+            'id' => $id,
+            'rol_id' => $data['rol_id'],
+            'nombre_completo' => $data['nombre_completo'],
+            'usuario' => $data['usuario'],
+            'email' => $data['email'],
+            'telefono' => $data['telefono'],
+            'estado' => $data['estado'],
+        ]);
+    }
+
+    public function updatePassword(
+        int $id,
+        string $passwordHash
+    ): void {
+
+        $sql = '
+            UPDATE usuarios
+            SET
+                password_hash = :password_hash,
+                actualizado_en = NOW()
+            WHERE id = :id
+            LIMIT 1
+        ';
+
+        $statement = Database::connection()->prepare($sql);
+
+        $statement->execute([
+            'id' => $id,
+            'password_hash' => $passwordHash,
+        ]);
     }
 }
 

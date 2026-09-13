@@ -90,6 +90,24 @@ switch (true) {
     case $path === '/usuarios' && $method === 'GET':
         AdminController::users();
         break;
+    case $path === '/usuarios/crear' && $method === 'GET':
+        AdminController::create();
+        break;
+    case $path === '/usuarios/crear' && $method === 'POST':
+        AdminController::store();
+        break;
+    case preg_match('#^/usuarios/editar/(\d+)$#', $path, $matches) === 1 && $method === 'GET':
+        AdminController::edit((int) $matches[1]);
+        break;
+    case preg_match('#^/usuarios/editar/(\d+)$#', $path, $matches) === 1 && $method === 'POST':
+        AdminController::update((int) $matches[1]);
+        break;
+    case preg_match('#^/usuarios/desactivar/(\d+)$#', $path, $matches) === 1 && $method === 'POST':
+        AdminController::deactivate((int) $matches[1]);
+        break;
+    case preg_match('#^/usuarios/activar/(\d+)$#', $path, $matches) === 1 && $method === 'POST':
+        AdminController::activate((int) $matches[1]);
+        break;
     case $path === '/solicitudes-cobro' && $method === 'GET':
         AdminController::paymentRequests();
         break;

@@ -10,15 +10,6 @@
 </style>
 <div class="container-fluid">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-1">Solicitudes de cobro</h1>
-            <p class="text-secondary mb-0">
-                Revisa las solicitudes enviadas por los cobradores.
-            </p>
-        </div>
-    </div>
-
     <div class="card card-soft">
         <div class="card-body">
 
