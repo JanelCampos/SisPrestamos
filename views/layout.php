@@ -1096,6 +1096,10 @@ if (btnActivarNotificaciones) {
                                     '<?= e(app_url('solicitudes-cobro')) ?>'
                                     + '?solicitud='
                                     + encodeURIComponent(notification.solicitud_cobro_id);
+                            }else {
+                                window.location.href =
+                                    '<?= e(app_url('prestamos/ver/')) ?>'
+                                    + notification.prestamo_id;
                             }
 
                         } catch (error) {
