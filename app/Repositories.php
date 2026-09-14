@@ -382,7 +382,7 @@ class LoanRepository
         // Archivar la notificación relacionada
         $notificationStatement = $connection->prepare(
             'UPDATE notificaciones_usuario
-            SET archivada = 1
+            SET archivada = 1, leida = 1, leida_en = NOW()
             WHERE solicitud_cobro_id = :solicitud_cobro_id'
         );
 
@@ -418,7 +418,7 @@ class LoanRepository
         // Archivar la notificación relacionada
         $notificationStatement = $connection->prepare(
             'UPDATE notificaciones_usuario
-            SET archivada = 1
+            SET archivada = 1, leida = 1, leida_en = NOW()
             WHERE solicitud_cobro_id = :solicitud_cobro_id'
         );
 
@@ -729,6 +729,17 @@ class LoanRepository
                         'No se pudo marcar la solicitud de cobro como utilizada.'
                     );
                 }
+
+                // Archivar la notificación relacionada
+                $notificationStatement = $connection->prepare(
+                    'UPDATE notificaciones_usuario
+                    SET archivada = 1, leida = 1, leida_en = NOW()
+                    WHERE solicitud_cobro_id = :solicitud_cobro_id'
+                );
+
+                $notificationStatement->execute([
+                    'solicitud_cobro_id' => $paymentRequest['id'],
+                ]);
             }
 
             $detailStatement = $connection->prepare(
