@@ -38,10 +38,11 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-end mb-3">
-    <a href="<?= e(app_url('prestamos/crear')) ?>" class="btn btn-primary">Registrar prestamo</a>
-</div>
-
+<?php if (\App\Auth::hasRole('administrador total') || \App\Auth::hasRole('digitador')): ?>
+    <div class="d-flex justify-content-end mb-3">
+        <a href="<?= e(app_url('prestamos/crear')) ?>" class="btn btn-primary">Registrar prestamo</a>
+    </div>
+<?php endif; ?>
 <div class="card card-soft">
     <div class="card-body p-0">
         <div class="table-responsive">

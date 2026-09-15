@@ -5,78 +5,83 @@ $chartRows = $data['chart'] ?? [];
 $alerts = $data['alerts'] ?? [];
 ?>
 
-<div class="row g-4 mb-4">
-    <div class="col-12 col-md-6 col-xl-4">
-        <div class="card card-soft h-100">
-            <div class="card-body">
-                <div class="text-secondary small text-uppercase mb-2">Monto total prestado</div>
-                <div class="kpi-value"><?= e(money($metrics['total_prestado'] ?? 0)) ?></div>
-                <div class="small text-secondary mt-2">Capital desembolsado historico.</div>
+<?php if (\App\Auth::hasRole('administrador total')): ?>
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="text-secondary small text-uppercase mb-2">Monto total prestado</div>
+                    <div class="kpi-value"><?= e(money($metrics['total_prestado'] ?? 0)) ?></div>
+                    <div class="small text-secondary mt-2">Capital desembolsado historico.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="text-secondary small text-uppercase mb-2">Utilidad del mes</div>
+                    <div class="kpi-value"><?= e(money($metrics['utilidad_mes'] ?? 0)) ?></div>
+                    <div class="small text-secondary mt-2">Intereses y mora recuperados en el mes actual.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="text-secondary small text-uppercase mb-2">Utilidad historica</div>
+                    <div class="kpi-value"><?= e(money($metrics['utilidad_total'] ?? 0)) ?></div>
+                    <div class="small text-secondary mt-2">Intereses y mora acumulados.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="text-secondary small text-uppercase mb-2">Prestamos vigentes</div>
+                    <div class="kpi-value text-primary"><?= e((string) ($metrics['prestamos_vigentes'] ?? 0)) ?></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="text-secondary small text-uppercase mb-2">Prestamos pagados</div>
+                    <div class="kpi-value text-success"><?= e((string) ($metrics['prestamos_pagados'] ?? 0)) ?></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="text-secondary small text-uppercase mb-2">Prestamos morosos</div>
+                    <div class="kpi-value text-danger"><?= e((string) ($metrics['prestamos_morosos'] ?? 0)) ?></div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-6 col-xl-4">
-        <div class="card card-soft h-100">
-            <div class="card-body">
-                <div class="text-secondary small text-uppercase mb-2">Utilidad del mes</div>
-                <div class="kpi-value"><?= e(money($metrics['utilidad_mes'] ?? 0)) ?></div>
-                <div class="small text-secondary mt-2">Intereses y mora recuperados en el mes actual.</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-4">
-        <div class="card card-soft h-100">
-            <div class="card-body">
-                <div class="text-secondary small text-uppercase mb-2">Utilidad historica</div>
-                <div class="kpi-value"><?= e(money($metrics['utilidad_total'] ?? 0)) ?></div>
-                <div class="small text-secondary mt-2">Intereses y mora acumulados.</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-md-4">
-        <div class="card card-soft h-100">
-            <div class="card-body">
-                <div class="text-secondary small text-uppercase mb-2">Prestamos vigentes</div>
-                <div class="kpi-value text-primary"><?= e((string) ($metrics['prestamos_vigentes'] ?? 0)) ?></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-md-4">
-        <div class="card card-soft h-100">
-            <div class="card-body">
-                <div class="text-secondary small text-uppercase mb-2">Prestamos pagados</div>
-                <div class="kpi-value text-success"><?= e((string) ($metrics['prestamos_pagados'] ?? 0)) ?></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-md-4">
-        <div class="card card-soft h-100">
-            <div class="card-body">
-                <div class="text-secondary small text-uppercase mb-2">Prestamos morosos</div>
-                <div class="kpi-value text-danger"><?= e((string) ($metrics['prestamos_morosos'] ?? 0)) ?></div>
-            </div>
-        </div>
-    </div>
-</div>
+<?php endif; ?>
+
 
 <div class="row g-4">
-    <div class="col-12 col-xl-8">
-        <div class="card card-soft h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h2 class="h5 mb-1">Tendencias mensuales</h2>
-                        <p class="text-secondary mb-0">Produccion, intereses proyectados y tasa de mora.</p>
+    <?php if (\App\Auth::hasRole('administrador total')): ?>
+        <div class="col-12 col-xl-8">
+            <div class="card card-soft h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="h5 mb-1">Tendencias mensuales</h2>
+                            <p class="text-secondary mb-0">Produccion, intereses proyectados y tasa de mora.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="<?= e(app_url('prestamos/crear')) ?>" class="btn btn-primary btn-sm">Nuevo prestamo</a>
+                            <a href="<?= e(app_url('clientes/crear')) ?>" class="btn btn-outline-primary btn-sm">Nuevo cliente</a>
+                        </div>
                     </div>
-                    <div class="d-flex gap-2">
-                        <a href="<?= e(app_url('prestamos/crear')) ?>" class="btn btn-primary btn-sm">Nuevo prestamo</a>
-                        <a href="<?= e(app_url('clientes/crear')) ?>" class="btn btn-outline-primary btn-sm">Nuevo cliente</a>
-                    </div>
+                    <canvas id="dashboardChart" height="120"></canvas>
                 </div>
-                <canvas id="dashboardChart" height="120"></canvas>
             </div>
         </div>
-    </div>
+    <?php endif; ?>
     <div class="col-12 col-xl-4">
         <div class="card card-soft h-100">
             <div class="card-body">

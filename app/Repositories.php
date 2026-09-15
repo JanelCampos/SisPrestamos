@@ -1561,7 +1561,11 @@ class NotificationUserRepository
             'UPDATE notificaciones_usuario
             SET
                 leida = 1,
-                leida_en = NOW()
+                leida_en = NOW(),
+                archivada = CASE 
+                    WHEN tipo = "solicitud_cobro_rechazada" then 1
+                    ELSE archivada
+                END
             WHERE id = :id
             AND usuario_id = :usuario_id
             AND leida = 0

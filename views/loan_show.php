@@ -25,6 +25,8 @@
             </div>
         </div>
     </div>
+    <?php if (\App\Auth::hasRole('administrador total') ||  \App\Auth::hasRole('cobrador')): ?>
+
     <div class="col-12 col-xl-8">
         <div class="card card-soft">
             <div class="card-body">
@@ -162,7 +164,6 @@
                                 <div class="text-success mb-2">
                                     <strong>Solicitud aprobada</strong>
                                 </div>
-
                                 <button
                                     type="submit"
                                     class="btn btn-primary"
@@ -185,7 +186,6 @@
                         <?php else: ?>
 
                             <?php if ($loan['estado'] !== 'pagado'): ?>
-
                                 <button
                                     type="submit"
                                     class="btn btn-primary"
@@ -202,6 +202,7 @@
             </div>
         </div>
     </div>
+    <?php endif; ?>
 </div>
 
 <div class="row g-4 mt-1">

@@ -264,15 +264,15 @@
                         <i class="bi bi-speedometer2 me-2"></i>Dashboard
 
                     </a>
+                    <?php if (\App\Auth::hasRole('administrador total') ||  \App\Auth::hasRole('digitador')): ?>
+                        <a
+                            class="nav-link <?= is_active_route('/clientes') ? 'active' : '' ?>"
+                            href="<?= e(app_url('clientes')) ?>">
 
-                    <a
-                        class="nav-link <?= is_active_route('/clientes') ? 'active' : '' ?>"
-                        href="<?= e(app_url('clientes')) ?>">
+                            <i class="bi bi-people me-2"></i>Clientes
 
-                        <i class="bi bi-people me-2"></i>Clientes
-
-                    </a>
-
+                        </a>
+                    <?php endif; ?>
                     <a
                         class="nav-link <?= is_active_route('/prestamos') ? 'active' : '' ?>"
                         href="<?= e(app_url('prestamos')) ?>">
@@ -291,15 +291,15 @@
 
                         </a>
 
+                        <a
+                            class="nav-link <?= is_active_route('/reportes') ? 'active' : '' ?>"
+                            href="<?= e(app_url('reportes')) ?>">
+
+                            <i class="bi bi-graph-up-arrow me-2"></i>Reportes
+
+                        </a>
+
                     <?php endif; ?>
-
-                    <a
-                        class="nav-link <?= is_active_route('/reportes') ? 'active' : '' ?>"
-                        href="<?= e(app_url('reportes')) ?>">
-
-                        <i class="bi bi-graph-up-arrow me-2"></i>Reportes
-
-                    </a>
 
                     <?php if (\App\Auth::hasRole('administrador total')): ?>
 
