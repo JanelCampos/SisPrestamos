@@ -311,13 +311,13 @@
 
                         </a>
 
-                        <a
+                        <!-- <a
                             class="nav-link <?= is_active_route('/configuracion') ? 'active' : '' ?>"
                             href="<?= e(app_url('configuracion')) ?>">
 
                             <i class="bi bi-sliders me-2"></i>Configuracion
 
-                        </a>
+                        </a> -->
 
                     <?php endif; ?>
 
@@ -345,9 +345,10 @@
                     </div>
 
 
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-end gap-2 gap-lg-3 w-100">
 
-                        <div class="text-end">
+                        <!-- USUARIO -->
+                        <div class="text-center text-lg-end flex-grow-1">
                             <div class="fw-semibold">
                                 <?= e($user['nombre_completo'] ?? '') ?>
                             </div>
@@ -358,7 +359,7 @@
                         </div>
 
                         <!-- NOTIFICACIONES -->
-                        <div class="dropdown position-relative notification-container">
+                        <div class="dropdown position-relative notification-container flex-shrink-0">
 
                             <button
                                 type="button"
@@ -381,7 +382,7 @@
                             <div
                                 class="dropdown-menu dropdown-menu-end shadow"
                                 id="notificationDropdown"
-                                style="width: 360px; max-height: 450px; overflow-y: auto;"
+                                style="width: 360px; max-width: 90vw; max-height: 450px; overflow-y: auto;"
                             >
                                 <div class="px-3 py-2 border-bottom">
                                     <strong>Notificaciones</strong>
@@ -396,21 +397,29 @@
 
                         </div>
 
-                        <!-- NOTIFICACIONES PUSH -->
+                        <!-- ACTIVAR PUSH -->
                         <button
                             type="button"
-                            class="btn btn-outline-primary btn-sm"
+                            class="btn btn-outline-primary btn-sm flex-shrink-0"
                             id="btnActivarNotificaciones"
                             title="Activar notificaciones Push"
                         >
                             <i class="bi bi-bell"></i>
-                            Activar
+                            <span class="d-sm-inline">Activar</span>
                         </button>
 
-                        <form method="post" action="<?= e(app_url('logout')) ?>">
+                        <!-- SALIR -->
+                        <form
+                            method="post"
+                            action="<?= e(app_url('logout')) ?>"
+                            class="flex-shrink-0"
+                        >
                             <?= csrf_field() ?>
 
-                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <button
+                                type="submit"
+                                class="btn btn-outline-danger btn-sm"
+                            >
                                 Salir
                             </button>
                         </form>

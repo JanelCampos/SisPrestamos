@@ -72,12 +72,27 @@ $alerts = $data['alerts'] ?? [];
                             <h2 class="h5 mb-1">Tendencias mensuales</h2>
                             <p class="text-secondary mb-0">Produccion, intereses proyectados y tasa de mora.</p>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="<?= e(app_url('prestamos/crear')) ?>" class="btn btn-primary btn-sm">Nuevo prestamo</a>
-                            <a href="<?= e(app_url('clientes/crear')) ?>" class="btn btn-outline-primary btn-sm">Nuevo cliente</a>
+                        <div class="row g-2">
+                            <div class="col-12 col-sm-auto">
+                                <a
+                                    href="<?= e(app_url('prestamos/crear')) ?>"
+                                    class="btn btn-primary btn-sm w-100"
+                                >
+                                    Nuevo prestamo
+                                </a>
+                            </div>
+
+                            <div class="col-12 col-sm-auto">
+                                <a
+                                    href="<?= e(app_url('clientes/crear')) ?>"
+                                    class="btn btn-outline-primary btn-sm w-100"
+                                >
+                                    Nuevo cliente
+                                </a>
+                            </div>
                         </div>
                     </div>
-                    <canvas id="dashboardChart" height="120"></canvas>
+                    <canvas id="dashboardChart" height="200"></canvas>
                 </div>
             </div>
         </div>
