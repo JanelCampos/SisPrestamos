@@ -272,7 +272,9 @@ class LoanRepository
 {
     public function all(array $filters = []): array
     {
-        $sql = 'SELECT p.*, c.nombres AS cliente, u.nombre_completo AS usuario_registro
+        $sql = 'SELECT p.id, p.numero_prestamo, p.monto_principal, p.tasa_interes_tipo, p.tasa_interes_valor,
+            p.tasa_mora_diaria, p.plazo_cuotas, p.frecuencia_pago, p.fecha_otorgamiento, p.total_interes,
+            p.total_mora, p.saldo_pendiente, p.estado, p.observaciones, c.nombres AS cliente, u.nombre_completo AS usuario_registro
                 FROM prestamos p
                 INNER JOIN clientes c ON c.id = p.cliente_id
                 INNER JOIN usuarios u ON u.id = p.usuario_id
